@@ -29,7 +29,7 @@ int main (int argc, char **argv)
             std::cout << "avoiding the args and taking only the first!" << std::endl;
         }
         if (!isalldigits(argv[1]))
-            std::cout << "error! runing with the defalt port" << std::endl;
+            std::cout << "error! runing with the default port" << std::endl;
         else {
             char *endptr;
             long int result = strtol(argv[1], &endptr, 10);
