@@ -108,11 +108,14 @@ int main (int argc, char **argv)
     while (01) {
         handled_events_nb = 0;
         read_objs = all_objs;
+        timeval timeout;
+timeout.tv_sec = 1;  // Example: 1-second timeout
+timeout.tv_usec = 0; 
             FD_ZERO(&expect_objs);
     FD_ZERO(&write_objs);
         // write_objs = all_objs;
-        // expect_objs = all_objs;
-        select_return = select(fds_higher + 1, &read_objs, &write_objs, &expect_objs, NULL);
+        expect_objs = all_objs;
+        select_return = select(fds_higher + 1, &read_objs, &write_objs, &expect_objs, &timeout);
         if (select_return < 0)
         {
             std::cerr << "well selected failed asidi" << std::endl;
@@ -142,6 +145,11 @@ int main (int argc, char **argv)
                     std::array<char, READ_BUFFER_SIZE> buffer;
                     ssize_t ret = recv(i, buffer.data(), buffer.size(), 0);
                     if (ret <= 0){
+                        //                         if (ret == 0) { 
+                        //     LOG_INFO("Client closed connection");  // Graceful close
+                        // } else {
+                        //     LOG_ERROR("Error occurred on socket: " << strerror(errno)); 
+                        // }
                         LOG_ERROR("To remove client");
                         FD_CLR(i, &all_objs);
                         close(i);
@@ -151,7 +159,7 @@ int main (int argc, char **argv)
                     for (ssize_t s = 0; s < ret; s++) {
                         tmp.push_back(buffer.data()[s]);
                     }
-                    LOG_INFO("This content is: " << tmp);
+                    LOG_INFO("This content is: " << tmp << "the size is: " << ret);
                 }
                 else if (FD_ISSET(i, &write_objs))
                 {
