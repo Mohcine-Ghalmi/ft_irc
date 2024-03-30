@@ -6,7 +6,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <array>
+#include <unistd.h>
+
 typedef struct addrinfo infos;
+
+#define READ_BUFFER_SIZE 1024 * 32
+
 
 #define LOG_INFO(custom_string)  \
     std::cout << "INFO: " << custom_string << std::endl; 
@@ -88,10 +94,6 @@ int main (int argc, char **argv)
     fd_set write_objs;
     fd_set expect_objs;
 
-        //    void FD_CLR(int fd, fd_set *set);
-    //    int  FD_ISSET(int fd, fd_set *set);
-    //    void FD_SET(int fd, fd_set *set);
-    //    void FD_ZERO(fd_set *set);
     FD_ZERO(&all_objs);
     FD_ZERO(&read_objs);
     FD_ZERO(&expect_objs);
@@ -101,37 +103,63 @@ int main (int argc, char **argv)
 
     FD_SET(fd, &all_objs);
 
-int select_return;
-int handled_events_nb;
+    int select_return;
+    int handled_events_nb;
     while (01) {
         handled_events_nb = 0;
         read_objs = all_objs;
-        write_objs = all_objs;
-        expect_objs = all_objs;
+            FD_ZERO(&expect_objs);
+    FD_ZERO(&write_objs);
+        // write_objs = all_objs;
+        // expect_objs = all_objs;
         select_return = select(fds_higher + 1, &read_objs, &write_objs, &expect_objs, NULL);
         if (select_return < 0)
         {
             std::cerr << "well selected failed asidi" << std::endl;
             exit (1);
         }
-        else {
+        else if (select_return != 0) {
             for (int i = fd; i <= fds_higher; i++)
             {
                 if (FD_ISSET(i, &read_objs))
                 {
+                    LOG_INFO("- This file discreptor is ready to read => -" << i);
                     handled_events_nb++;
+                    // accepting a client who joined us
                     if (i == fd) {
-                        LOG_INFO("server with reading request");
+                        LOG_INFO("- Server with reading request -");
+                        int new_client_fd = accept(fd, NULL, NULL);
+                        if (new_client_fd < 0)
+                        {
+                            LOG_INFO("- This client is out! -");
+                            continue;
+                        }
+                        FD_SET(new_client_fd, &all_objs);
+                        if (new_client_fd > fds_higher)
+                            fds_higher = new_client_fd;
+                        continue;
                     }
-                    LOG_INFO("this file discreptor is ready to read => " << i);
+                    std::array<char, READ_BUFFER_SIZE> buffer;
+                    ssize_t ret = recv(i, buffer.data(), buffer.size(), 0);
+                    if (ret <= 0){
+                        LOG_ERROR("To remove client");
+                        FD_CLR(i, &all_objs);
+                        close(i);
+                    }
+                    std::string tmp;
+                    tmp.reserve(ret);
+                    for (ssize_t s = 0; s < ret; s++) {
+                        tmp.push_back(buffer.data()[s]);
+                    }
+                    LOG_INFO("This content is: " << tmp);
                 }
                 else if (FD_ISSET(i, &write_objs))
                 {
                     handled_events_nb++;
                     if (i == fd) {
-                        LOG_INFO("server with writing request ? comment");
+                        LOG_INFO("- Server with writing request ? comment -");
                     }
-                    LOG_INFO("this file discreptor is write to read => " << i);
+                    LOG_INFO("This file discreptor is ready to write => " << i);
                 }
                 else if (FD_ISSET(i, &expect_objs))
                 {
@@ -140,7 +168,9 @@ int handled_events_nb;
                         exit (1);
                     }
                     handled_events_nb++;
-                    LOG_ERROR("this file discreptor has exeption => " << i);
+                    LOG_ERROR("This file discreptor has exeption => " << i);
+                    FD_CLR(i, &all_objs);
+                    close(i);
                 }
                 if (handled_events_nb == select_return)
                     break;
