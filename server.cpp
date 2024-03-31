@@ -170,12 +170,41 @@ int Server::process_client_message(int clientfd)
     for (ssize_t s = 0; s < ret; s++) {
     tmp.push_back(buffer.data()[s]);
     }
+    LOG_INFO("This content is: " << tmp << "the size is: " << ret);
     std::pair<bool, std::string> result = this->clients[clientfd]->setBuffer(tmp);
     if (result.first) // message is finished!
     {
+        // handel message by client ->
+        for (size_t i = 0; i < result.second.size(); ++i) {
+            result.second[i] = tolower(result.second[i]); 
+        }
+        std::vector<std::string> CommandParsed = tools.CommandParser(result.second);
+        if (CommandParsed[0] == "join")
+        {
+            // join channel
+        }
+        else if (CommandParsed[0] == "nick")
+        {
 
+        }
+        else if (CommandParsed[0] == "pass")
+        {
+
+        }
+        else if (CommandParsed[0] == "user")
+        {
+
+        }
+        else if (CommandParsed[0] == "join")
+        {
+
+        }
+        else if (CommandParsed[0] == "join")
+        {
+
+        }
+        // send message by client..
     }
-    LOG_INFO("This content is: " << tmp << "the size is: " << ret);
 }
 
 int Server::broadcast_message(std::string message, Channel* channel)

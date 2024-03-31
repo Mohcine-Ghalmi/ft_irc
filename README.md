@@ -60,7 +60,4 @@ Design Considerations
 Data Structures: Think about how to represent messages in transit, as well as internal representations of channel modes and client privileges.
 Inheritance: You might consider a base class for users, with a derived class for operators.
 Modularity: Aim to keep classes focused on specific responsibilities (think Single Responsibility Principle).
-Error Handling: Integrate exceptions or robust error code handling throughout your classes.
-Important Note:  This is a basic sketch. As you implement individual IRC commands and features, it's likely you'll introduce additional helper classes and refine the overall structure.
 
-Let me know if you want to brainstorm designs for specific command handling or want to discuss class interactions in more detail!

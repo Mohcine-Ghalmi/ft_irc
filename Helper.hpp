@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <array>
 #include <unistd.h>
+#include <sstream>
 
 typedef struct addrinfo info;
 
@@ -37,6 +38,7 @@ class Helper
     public:
         Helper(/* args */);
         bool isall_objsdigits(std::string str);
+        std::vector<std::string> CommandParser(std::string line);
         ~Helper();
 };
 
@@ -54,4 +56,30 @@ bool Helper::isall_objsdigits(std::string str)
         if (!std::isdigit((unsigned char)str[i]))
             return false;
     return true;
+}
+
+
+
+std::vector<std::string> Helper::CommandParser(std::string line)
+{
+    std::size_t start = 0;
+    std::vector<std::string> args;
+    args.reserve(3);
+
+
+    std::stringstream ss(line);
+    std::string token;
+
+    std::getline(ss, token, ' ');
+    args.push_back(token);
+    while (std::getline(ss, token, ' ')) {
+        if (token.front() == ':') { 
+            args.push_back(token.substr(1));
+            break;
+        } else {
+            args.push_back(token);
+        }
+    }
+
+    return args;
 }
