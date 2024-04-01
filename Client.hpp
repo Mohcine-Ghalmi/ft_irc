@@ -12,6 +12,9 @@ class Client
         std::string buffer;
     public:
         Client();
+        std::string getNickName();
+        std::string getUserName();
+        std::string getRealName();
         int send_message(std::string message);
         int join_channel(std::string channel_name);
         int leave_channel(std::string channel_name);
@@ -26,4 +29,18 @@ Client::Client(/* args */)
 
 Client::~Client()
 {
+}
+
+
+std::string Client::getNickName()
+{
+    return this->nickname;
+}
+std::string Client::getUserName()
+{
+    return this->username;
+}
+std::string Client::getRealName()
+{
+    return this->realname;
 }

@@ -179,11 +179,41 @@ int Server::process_client_message(int clientfd)
             result.second[i] = tolower(result.second[i]); 
         }
         std::vector<std::string> CommandParsed = tools.CommandParser(result.second);
+        if ((CommandParsed[0] != "nick" && CommandParsed[0] != "pass" && CommandParsed[0] != "user") && (!this->clients[clientfd]->getNickName().empty() || !this->clients[clientfd]->getNickName().empty()
+                || !this->clients[clientfd]->getNickName().empty())) {
+                LOG_INFO("HE HAS NO AUTH");
+                return 1;
+        }
         if (CommandParsed[0] == "join")
         {
-            // join channel
+            // parse join args :
+
+            // check channel exists => if not create it =>
+                    /*
+                        - Channel name rules:
+                            Channels names are strings (beginning with a '&' or '#' character) of
+                            length up to 200 characters.  Apart from the the requirement that the
+                            first character being either '&' or '#'; the only restriction on a
+                            channel name is that it may not contain any spaces (' '), a control G
+                            (^G or ASCII 7), or a comma (',' which is used as a list item
+                            separator by the protocol).
+                        - when creating the channel : the channel is created and the creating user becomes a
+                            channel operator.
+                    */
+            // if the channel exists :
+            /*
+                If the channel already exists, whether or not your
+                request to JOIN that channel is honoured depends on the current modes
+                of the channel. For example, if the channel is invite-only, (+i),
+                then you may only join if invited.  As part of the protocol, a user
+                may be a part of several channels at once, but a limit of ten (10)
+                channels is recommended as being ample for both experienced and
+                novice users.
+            */
+             
+            // this->channels
         }
-        else if (CommandParsed[0] == "nick")
+        if (CommandParsed[0] == "nick")
         {
 
         }
@@ -195,13 +225,41 @@ int Server::process_client_message(int clientfd)
         {
 
         }
-        else if (CommandParsed[0] == "join")
+        else if (CommandParsed[0] == "mod")
         {
+            //    Parameters: <channel> {[+|-]|o|p|s|i|t|n|b|v} [<limit>] [<user>]
+            //                [<ban mask>]
 
-        }
-        else if (CommandParsed[0] == "join")
+            //    The MODE command is provided so that channel operators may change the
+            //    characteristics of `their' channel.  It is also required that servers
+            //    be able to change channel modes so that channel operators may be
+            //    created.
+
+            //    The various modes available for channels are as follows:
+
+            //            o - give/take channel operator privileges;
+            //            p - private channel flag;
+            //            s - secret channel flag;
+            //            i - invite-only channel flag;
+            //            t - topic settable by channel operator only flag;
+            //            n - no messages to channel from clients on the outside;
+            //            m - moderated channel;
+            //            l - set the user limit to channel;
+                //         b - set a ban mask to keep users out;
+                //         v - give/take the ability to speak on a moderated channel;
+                //         k - set a channel key (password).
+
+                //         When using the 'o' and 'b' options, a restriction on a total of three
+                //         per mode command has been imposed.  That is, any combination of 'o'
+
+        } else if (CommandParsed[0] == "topic") 
         {
+            // Parameters: <channel> [<topic>]
 
+            // The TOPIC message is used to change or view the topic of a channel.
+            // The topic for channel <channel> is returned if there is no <topic>
+            // given.  If the <topic> parameter is present, the topic for that
+            // channel will be changed, if the channel modes permit this action.
         }
         // send message by client..
     }
