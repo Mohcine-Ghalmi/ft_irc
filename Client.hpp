@@ -8,6 +8,7 @@ class Client
         std::string nickname;
         std::string username;
         std::string realname;
+        bool is_auth;
         bool is_operator;
         std::string buffer;
     public:
@@ -15,6 +16,7 @@ class Client
         std::string getNickName();
         std::string getUserName();
         std::string getRealName();
+        bool getAuthStatus();
         int send_message(std::string message);
         int join_channel(std::string channel_name);
         int leave_channel(std::string channel_name);
@@ -43,4 +45,10 @@ std::string Client::getUserName()
 std::string Client::getRealName()
 {
     return this->realname;
+}
+
+
+bool Client::getAuthStatus()
+{
+    return this->is_auth;
 }

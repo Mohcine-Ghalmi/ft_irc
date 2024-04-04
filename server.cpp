@@ -7,8 +7,9 @@ Server::Server(int argc, char **argv)
         std::cerr << "Run default server" << std::endl;
     }
     else {
-        if (argc != 2 ) {
-            std::cerr << "avoiding the args and taking only the first!" << std::endl;
+        if (argc != 3 ) {
+            std::cerr << "args error!" << std::endl;
+            exit (1);
         }
         if (!tools.isall_objsdigits(argv[1]))
             std::cerr << "error! runing with the default port" << std::endl;
@@ -20,6 +21,7 @@ Server::Server(int argc, char **argv)
                 else 
                     port = argv[1];
             }
+        this->password = argv[2];
     }
 
     // server setuping
@@ -171,15 +173,15 @@ int Server::process_client_message(int clientfd)
     tmp.push_back(buffer.data()[s]);
     }
     LOG_INFO("This content is: " << tmp << "the size is: " << ret);
-    std::pair<bool, std::string> result = this->clients[clientfd]->setBuffer(tmp);
+    std::pair<bool, std::string> result = this->clients[clientfd]->setBuffer(tmp); // check if I recieved the \r\n : 
     if (result.first) // message is finished!
     {
-        // handel message by client ->
-        for (size_t i = 0; i < result.second.size(); ++i) {
-            result.second[i] = tolower(result.second[i]); 
-        }
+        // handel message by client -> 
         std::vector<std::string> CommandParsed = tools.CommandParser(result.second);
-        if ((CommandParsed[0] != "nick" && CommandParsed[0] != "pass" && CommandParsed[0] != "user") && (!this->clients[clientfd]->getNickName().empty() || !this->clients[clientfd]->getNickName().empty()
+        for (size_t i = 0; i < CommandParsed[0].size(); ++i) {
+            CommandParsed[0][i] = tolower(CommandParsed[0][i]); 
+        }
+        if ((CommandParsed[0] != "nick" && CommandParsed[0] != "pass" && CommandParsed[0] != "user") && (!this->clients[clientfd]->getAuthStatus() || !this->clients[clientfd]->getNickName().empty()
                 || !this->clients[clientfd]->getNickName().empty())) {
                 LOG_INFO("HE HAS NO AUTH");
                 return 1;
@@ -202,7 +204,7 @@ int Server::process_client_message(int clientfd)
                     */
             // if the channel exists :
             /*
-                If the channel already exists, whether or not your
+               whether or not your
                 request to JOIN that channel is honoured depends on the current modes
                 of the channel. For example, if the channel is invite-only, (+i),
                 then you may only join if invited.  As part of the protocol, a user
@@ -215,7 +217,12 @@ int Server::process_client_message(int clientfd)
         }
         if (CommandParsed[0] == "nick")
         {
-
+            if (!this->clients[clientfd]->getAuthStatus())
+            {
+                LOG_ERROR("YOU NEED A PASS FIRST");
+                return 1;
+            }
+            //   nickname   =  ( letter / special ) *8( letter / digit / special / "-" ) => total 9 chars
         }
         else if (CommandParsed[0] == "pass")
         {
@@ -223,7 +230,11 @@ int Server::process_client_message(int clientfd)
         }
         else if (CommandParsed[0] == "user")
         {
-
+            if (!this->clients[clientfd]->getAuthStatus())
+            {
+                LOG_ERROR("YOU NEED A PASS FIRST");
+                return 1;
+            }
         }
         else if (CommandParsed[0] == "mod")
         {
