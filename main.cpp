@@ -17,6 +17,7 @@ typedef struct addrinfo info;
 #define RESET   "\033[0m"
 
 #define READ_BUFFER_SIZE 1024 * 32
+#define BUFFER_SIZE 1024
 
 #define LOG_INFO(custom_string)  \
     std::cout << GREEN << "INFO: " << RESET << custom_string<< std::endl; 
@@ -47,13 +48,13 @@ std::string checking_input(int argc, char **argv, std::string &pass) {
                       << "Any additional arguments will be ignored.")
         if (argc == 2) 
             LOG_MSG(BLUE "WARNING" RESET " The program is running without a password.");
-        if (!isall_objsdigits(argv[1])) {LOG_ERROR("runing with the default port");}
+        if (!isall_objsdigits(argv[1])) {LOG_ERROR("The programe will run with the default Port");}
         else {
             char *endptr;
             long int result = strtol(argv[1], &endptr, 10);
 
                 if (*endptr != '\0' || result == LONG_MIN || result == LONG_MAX) {
-                    LOG_MSG(BLUE "NOTE:" RESET "The programe will run with the default server");
+                    LOG_MSG(BLUE "NOTE:" RESET "The programe will run with the default Port");
                 }
                 else {
                     port = argv[1];
@@ -65,16 +66,54 @@ std::string checking_input(int argc, char **argv, std::string &pass) {
     return (port);
 }
 
+int connectClient(int serverSocket) {
+    int newClientSocket = accept(serverSocket, NULL, NULL);
+
+    if (newClientSocket < 0) {
+        LOG_ERROR("accept : " << strerror(errno));
+        return (newClientSocket);
+    }
+
+    std::string welcomeMessage = ":localhost 001 irssi_user :Welcome to the simple IRC server\r\n";
+    send(newClientSocket, welcomeMessage.c_str(), welcomeMessage.size(), 0);
+
+    char buffer[BUFFER_SIZE];
+
+    while (true) {
+        memset(buffer, 0, BUFFER_SIZE);
+
+        ssize_t bytesReceived = recv(newClientSocket, buffer, BUFFER_SIZE, 0);
+
+        if (bytesReceived <= 0) {
+            if (bytesReceived == 0) {LOG_INFO("Client disconnected.");}
+            else {LOG_ERROR("Error receiving message from client.");}
+            close(newClientSocket);
+            break;
+        }
+
+        std::string clientMessage(buffer);
+
+        if (clientMessage.find("CAP LS 302") != std::string::npos) { // client asking for you're server Capabilities
+            std::string capResponse = ":localhost CAP * LS :\r\n"; // sending Empty CAP List (do not support any advanced features)
+
+            send(newClientSocket, capResponse.c_str(), capResponse.size(), 0);
+            std::cout << "Sent CAP LS response to client" << std::endl;
+        } else 
+            std::cout << "Received from client: " << clientMessage << std::endl;
+
+    }
+    return (newClientSocket);
+}
+
 int main (int argc, char **argv) {
     // params parsing
     std::string pass;
     std::string port = checking_input(argc, argv, pass);
     LOG_INFO("Port is " << port);
-    LOG_INFO("Password is " << "<" << pass << ">");
+    LOG_INFO("Password is " << "<" << (pass != "" ? pass : "No Password Used") << ">");
     
 
     // server setuping
-    // int backlog = 128;
     info* addr;
     info hints;
 
@@ -83,34 +122,34 @@ int main (int argc, char **argv) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
-
-    int ireturn = getaddrinfo((const char *)"localhost", port.c_str(), &hints, &addr);
     
-    if (ireturn != 0) {
-        std::cerr << "getaddrinfo : " << strerror(errno) << '\n';
+    if (getaddrinfo((const char *)"localhost", port.c_str(), &hints, &addr) != 0) { 
+        LOG_ERROR("getaddrinfo : " << strerror(errno));
         exit(1);
     }
 
-    // int fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-    // int enable = 1;
+    int serverSocket = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+    int enable = 1;
 
-    // if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) ==
-    //     -1) {
-    //     std::cerr << "setsockopt : " << strerror(errno) << '\n';
-    //     exit(1);
-    // }
-    // if (bind(fd, addr->ai_addr, addr->ai_addrlen) == -1) {
-    //     std::cerr << "bind : " << strerror(errno) << '\n';
-    //     exit(1);
-    // }
-    // if (listen(fd, backlog) == -1) {
-    //     std::cerr << "listen : " << strerror(errno) << '\n';
-    //     exit(1);
-    // }
-    // freeaddrinfo(addr); 
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) ==
+        -1) {
+            LOG_ERROR("setsockopt : " << strerror(errno));
+        exit(1);
+    }
+    if (bind(serverSocket, addr->ai_addr, addr->ai_addrlen) == -1) {
+        LOG_ERROR("bind : " << strerror(errno));
+        exit(1);
+    }
 
-    // // event loop
-
+    freeaddrinfo(addr); 
+    
+    if (listen(serverSocket, 128) == -1) {
+        LOG_ERROR("listen : " << strerror(errno));
+        exit(1);
+    }
+    
+    // event loop    
+    
     // fd_set all_objs;
     // fd_set read_objs;
     // fd_set write_objs;
@@ -131,11 +170,11 @@ int main (int argc, char **argv) {
     //     handled_events_nb = 0;
     //     read_objs = all_objs;
     //     timeval timeout;
-    // timeout.tv_sec = 1;  // Example: 1-second timeout
-    // timeout.tv_usec = 0; 
-    //         FD_ZERO(&expect_objs);
-    // FD_ZERO(&write_objs);
-    //     // write_objs = all_objs;
+    //     timeout.tv_sec = 1;  // Example: 1-second timeout
+    //     timeout.tv_usec = 0; 
+    //     FD_ZERO(&expect_objs);
+    //     FD_ZERO(&write_objs);
+    //     write_objs = all_objs;
     //     expect_objs = all_objs;
     //     select_return = select(fds_higher + 1, &read_objs, &write_objs, &expect_objs, &timeout);
     //     if (select_return < 0)
@@ -153,21 +192,21 @@ int main (int argc, char **argv) {
     //                 // accepting a client who joined us
     //                 if (i == fd) {
     //                     LOG_INFO("- Server with reading request -");
-    //                     int new_client_fd = accept(fd, NULL, NULL);
-    //                     if (new_client_fd < 0)
-    //                     {
-    //                         LOG_INFO("- This client is out! -");
-    //                         continue;
-    //                     }
+                            // int newClientSocket = accept(serverSocket, NULL, NULL);
+                            // if (newClientSocket < 0)
+                            // {
+                            //     LOG_INFO("- This client is out! -");
+                            //     // continue;
+                            // }
     //                     FD_SET(new_client_fd, &all_objs);
     //                     if (new_client_fd > fds_higher)
     //                         fds_higher = new_client_fd;
     //                     continue;
     //                 }
-    //                 std::array<char, READ_BUFFER_SIZE> buffer;
-    //                 ssize_t ret = recv(i, buffer.data(), buffer.size(), 0);
+                    // std::array<char, READ_BUFFER_SIZE> buffer;
+                    // ssize_t ret = recv(i, buffer.data(), buffer.size(), 0);
     //                 if (ret <= 0){
-    //                     //                         if (ret == 0) { 
+    //                         if (ret == 0) { 
     //                     //     LOG_INFO("Client closed connection");  // Graceful close
     //                     // } else {
     //                     //     LOG_ERROR("Error occurred on socket: " << strerror(errno)); 
@@ -207,4 +246,6 @@ int main (int argc, char **argv) {
     //         }
     //     }
     // }
+
+    return (0);
 }
