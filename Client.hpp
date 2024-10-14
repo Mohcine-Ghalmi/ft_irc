@@ -36,6 +36,7 @@ std::string Client::getNickName()
 {
     return this->nickname;
 }
+
 std::string Client::getUserName()
 {
     return this->username;

@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <array>
 #include <unistd.h>
+#include <vector>
 #include <sstream>
 
 typedef struct addrinfo info;
