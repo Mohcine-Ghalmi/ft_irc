@@ -31,3 +31,6 @@ after logged in the irssi client send multi text like showing bellow  making iss
 
 still need in  this function to set the nickname in irssi server 
     void sendHellGate(int client_socket, std::string name)
+
+
+also irssi can't accept //PASS command need to be fixed
