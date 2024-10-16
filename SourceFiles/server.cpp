@@ -1,4 +1,14 @@
 #include "../HeaderFiles/Server.hpp"
+#include <typeinfo>
+
+#define LOG_INFO(custom_string)  \
+    std::cout << GREEN << "INFO: " << RESET << custom_string<< std::endl; 
+ 
+#define LOG_ERROR(custom_string)  \
+    std::cout << RED << "ERROR: " << RESET << custom_string<< std::endl;
+
+#define LOG_MSG(custom_string)  \
+    std::cout << custom_string<< std::endl;
 
 bool isall_objsdigits(std::string str) 
 {
@@ -83,6 +93,22 @@ int Server::getServerSocket() {
     return (serverSocket);
 }
 
+void sendHellGate(int client_socket, std::string name) {
+    std::string hellGate = 
+        ":localhost 001 " + name + "\n"
+        "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\r\n"
+        "    🔥      "RED"    Welcome to       🔥\n"
+        "    🔥      "RED"      Hell!          🔥\n"
+        "    🔥                           🔥\n"
+        "    🔥   👿 "RED" Beware of the       🔥\n"
+        "    🔥   "RED"Darkness and Flames!    🔥\n"
+        "    🔥                           🔥\n"
+        "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥"RESET"\r\n";
+
+    // Send the hellGate message to the client
+    send(client_socket, hellGate.c_str(), hellGate.length(), 0);
+}
+
 void Server::acceptConnection() {
     int newClientSocket = accept(serverSocket, NULL, NULL);
     if (newClientSocket < 0) {
@@ -90,12 +116,80 @@ void Server::acceptConnection() {
         return;
     }
 
-    std::string welcomeMessage = ":localhost 001 irssi_user :Welcome to the simple IRC server\r\n";
-    send(newClientSocket, welcomeMessage.c_str(), welcomeMessage.size(), 0);
-
     clients.push_back(Client(newClientSocket));  // Add client to the server's client list
-    std::cout << "New client connected!" << std::endl;
+    sendHellGate(newClientSocket, "mohcine");
 }
+
+bool Server::setUpClient(std::string message, Client &client) {
+    // if (!client.isAuthenticated() && !password.empty()) {
+    //     std::string passRequest = ":localhost NOTICE * :Please provide your password using the PASS command.\r\n";
+    //     send(client.getSocket(), passRequest.c_str(), passRequest.size(), 0);
+
+    //     if (message.find("PASS") != std::string::npos) {
+    //         std::string pass = message.substr(5);  // Extract password
+    //         if (validatePassword(pass, password)) {
+    //             client.authenticate();
+    //             return (true);
+    //         } else {
+    //             std::string incorrectPassMsg = ":localhost NOTICE * :Incorrect password. Try again.\r\n";
+    //             send(client.getSocket(), incorrectPassMsg.c_str(), incorrectPassMsg.size(), 0);
+    //         }
+    //     }
+    // }
+
+    // // If PASS succeeded, proceed to request NICK
+
+    if (!client.isAuthenticated()) {
+        std::string nickRequest = ":localhost NOTICE * :Please provide your nickname using the NICK command.\r\n";
+        send(client.getSocket(), nickRequest.c_str(), nickRequest.size(), 0);
+
+        if (message.find("NICK") != std::string::npos) {
+            std::string nick = message.substr(5);  // Extract nickname
+            std::cout << nick << std::endl;
+            client.setNickName(nick);
+            client.authenticate();
+            std::string nickName = ":localhost NOTICE * :your nickname is settled\r\n";
+            send(client.getSocket(), nickName.c_str(), nickName.size(), 0);
+            return (true);
+        } else {
+            std::string incorrectNickMsg = ":localhost NOTICE * :Please provide a valid NICK command.\r\n";
+            send(client.getSocket(), incorrectNickMsg.c_str(), incorrectNickMsg.size(), 0);
+        }
+    }
+    return (false);
+    // // If NICK succeeded, proceed to request USER
+    // retry = 3;
+    // authenticated = false;
+
+    // while (retry > 0 && !authenticated) {
+    //     std::string userRequest = ":localhost NOTICE * :Please provide your user information using the USER command.\r\n";
+    //     send(client.getSocket(), userRequest.c_str(), userRequest.size(), 0);
+
+    //     if (message.find("USER") != std::string::npos) {
+    //         std::string user = message.substr(5);  // Extract user information
+    //         client.setUserName(user);
+    //         authenticated = true;
+    //     } else {
+    //         std::string incorrectUserMsg = ":localhost NOTICE * :Please provide a valid USER command.\r\n";
+    //         send(client.getSocket(), incorrectUserMsg.c_str(), incorrectUserMsg.size(), 0);
+    //         retry--;
+    //     }
+    // }
+
+    // if (!authenticated) {
+    //     std::string disconnectMessage = ":localhost NOTICE * :Too many incorrect attempts. Disconnecting.\r\n";
+    //     send(client.getSocket(), disconnectMessage.c_str(), disconnectMessage.size(), 0);
+    //     close(client.getSocket());  // Disconnect after failed attempts
+    //     return;
+    // }
+
+    // // If everything is correct, send a welcome message
+    // std::string welcomeMessage = ":localhost 001 " + client.getNickName() + " :Welcome to the IRC server\r\n";
+    // send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.size(), 0);
+
+    std::cout << "Client setup completed successfully for " << client.getNickName() << std::endl;
+}
+
 
 void sendCapResponse(int clientSocket) {
     std::string capResponse = ":localhost CAP * LS :\r\n"; // sending Empty CAP List (do not support any advanced features)
@@ -104,17 +198,53 @@ void sendCapResponse(int clientSocket) {
     std::cout << "Sent CAP LS response to client" << std::endl;
 }
 
-void Server::handleClientMessage(int clientSocket, const std::string &message) {
+void Server::handleClientMessage(Client &client, const std::string &message) {
     if (message.find("CAP LS 302") != std::string::npos)
-        sendCapResponse(clientSocket);
-    else
+        sendCapResponse(client.getSocket());
+    else if (message.find("PING") == 0) {
+        std::string pingToken = message.substr(5);
+        std::string pongResponse = "PONG " + pingToken + "\r\n";
+
+        // Send PONG response back to the client (to stay connectes without reseting the connection // the irssi client wil restart if no pong send recived)
+        send(client.getSocket(), pongResponse.c_str(), pongResponse.size(), 0);
+        std::cout << message;
+        std::cout << pongResponse;
+    } else {
         std::cout << "Received from client: " << message << std::endl;
+        if (setUpClient(message, client)) {
+            std::cout << "Client setup completed successfully for " << client.getNickName() << std::endl;
+        }
+    }
+}
+
+void Server::processClienstMessage(fd_set readfds) {
+    char buffer[BUFFER_SIZE];
+
+    for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ) {
+        if (FD_ISSET(it->getSocket(), &readfds)) {
+            memset(buffer, 0, BUFFER_SIZE);
+            ssize_t bytesReceived = recv(it->getSocket(), buffer, BUFFER_SIZE, 0);
+
+            if (bytesReceived <= 0) {
+                if (bytesReceived == 0)
+                    std::cout << "Client disconnected" << std::endl;
+                else
+                    perror("recv error");
+                close(it->getSocket());
+                it = clients.erase(it);
+            } else {
+                std::string clientMessage(buffer);
+                handleClientMessage(*it, clientMessage);
+                ++it;
+            }
+        } else
+            ++it;
+    }
 }
 
 void Server::start() {
     int  maxFd;
     fd_set readfds;
-    char buffer[BUFFER_SIZE];
 
     while (true) {
         FD_ZERO(&readfds);
@@ -131,134 +261,18 @@ void Server::start() {
 
         if (select(maxFd + 1, &readfds, NULL, NULL, NULL) < 0) {
                 perror("select error");
-                std::cout << "maxFd = " << maxFd << std::endl;
-                if (errno == EBADF)
-                    std::cout << "One of the bit sets specified an incorrect socket.\n" <<
-                     " [FD_ZERO() was probably not called before the sockets were set.]" << std::endl;
-                else if (errno == EFAULT)
-                    std::cout << "One of the bit sets pointed to a value outside the caller address space." << std::endl;
                 exit(EXIT_FAILURE);
         }
 
         if (FD_ISSET(getServerSocket(), &readfds))
             acceptConnection(); // create clients
-
-        for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ) {
-            if (FD_ISSET(it->getSocket(), &readfds)) {
-                memset(buffer, 0, BUFFER_SIZE);
-                ssize_t bytesReceived = recv(it->getSocket(), buffer, BUFFER_SIZE, 0);
-
-                if (bytesReceived <= 0) {
-                    if (bytesReceived == 0)
-                        std::cout << "Client disconnected" << std::endl;
-                    else
-                        perror("recv error");
-                    close(it->getSocket());
-                    it = clients.erase(it);
-                } else {
-                    std::string clientMessage(buffer);
-                    handleClientMessage(it->getSocket(), clientMessage);
-                    ++it;
-                }
-            } else
-                ++it;
-        }
-
+        processClienstMessage(readfds);
     }
-    // close(serverSocket);
 }
 
-// Client *Server::accept_connections()
-// {
-//     LOG_INFO("- Server with reading request -");
-//     int new_client_fd = accept(this->socket_fd, NULL, NULL);
-//     if (new_client_fd < 0)
-//     {
-//         LOG_INFO("- This client is out! -");
-//         return NULL;
-//     }
-//     FD_SET(new_client_fd, &(this->all_objs));
-//     if (new_client_fd > this->fds_higher)
-//         this->fds_higher = new_client_fd;
-//     Client *newClient = new Client();
-
-//     clients[new_client_fd] = newClient;
-
-//     return newClient;
-// }
-
-// int Server::handle_io()
-// {
-//     fd_set read_objs;
-//     fd_set write_objs;
-//     fd_set expect_objs;
-
-//     FD_ZERO(&(this->all_objs));
-//     FD_ZERO(&read_objs);
-//     FD_ZERO(&write_objs);
-//     FD_ZERO(&expect_objs);
-
-//     this->fds_higher = this->socket_fd;
-
-//     FD_SET(this->socket_fd, &(this->all_objs));
-
-//     int select_return;
-//     int handled_events_nb;
-//     while (01) {
-//         handled_events_nb = 0;
-//         read_objs = this->all_objs;
-//         timeval timeout;
-//         timeout.tv_sec = 1;
-//         timeout.tv_usec = 0; 
-//         FD_ZERO(&expect_objs);
-//         FD_ZERO(&write_objs);
-//         // write_objs = this->all_objs;
-//         expect_objs = this->all_objs;
-//         select_return = select(this->fds_higher + 1, &read_objs, &write_objs, &expect_objs, &timeout);
-//         if (select_return < 0)
-//         {
-//             std::cerr << "well selected failed asidi" << std::endl;
-//             exit (1);
-//         }
-//         else if (select_return != 0) {
-//             for (int i = this->socket_fd; i <= this->fds_higher; i++)
-//             {
-//                 if (FD_ISSET(i, &read_objs))
-//                 {
-//                     LOG_INFO("- This file discreptor is ready to read => -" << i);
-//                     handled_events_nb++;
-//                     // accepting a client who joined us
-//                     if (i == this->socket_fd) {
-//                         this->accept_connections();
-//                         continue;
-//                     }
-//                     process_client_message(i);
-//                 }
-//                 else if (FD_ISSET(i, &write_objs))
-//                 {
-//                     handled_events_nb++;
-//                     if (i == this->socket_fd) {
-//                         LOG_INFO("- Server with writing request ? comment -");
-//                     }
-//                     LOG_INFO("This file discreptor is ready to write => " << i);
-//                 }
-//                 else if (FD_ISSET(i, &expect_objs))
-//                 {
-//                     if (i == this->socket_fd) {
-//                         LOG_INFO("server with exeption! - we closed today");
-//                         exit (1);
-//                     }
-//                     handled_events_nb++;
-//                     LOG_ERROR("This file discreptor has exeption => " << i);
-//                     FD_CLR(i, &(this->all_objs));
-//                     close(i);
-//                 }
-//                 if (handled_events_nb == select_return)
-//                     break;
-//             }
-//         }
-//     }
-// }
+bool Server::validatePassword(const std::string &clientPassword, const std::string &expectedPassword) {
+    return expectedPassword.empty() || clientPassword == expectedPassword; // if there's no password or password matched return turue 
+}
 
 // int Server::process_client_message(int clientfd)
 // {

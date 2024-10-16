@@ -1,6 +1,6 @@
 #include "../HeaderFiles/Client.hpp"
 
-Client::Client(int socket) : clientSocket(socket), authenticated(false) {}
+Client::Client(int socket) : clientSocket(socket),  authenticated(false) {}
 
 std::string Client::getNickName() {
     return nickname;
@@ -18,13 +18,13 @@ void Client::setUserName(const std::string &user) {
     username = user;
 }
 
-void Client::appendToBuffer(const std::string &data) {
-    buffer += data;
-}
+// void Client::appendToBuffer(const std::string &data) {
+//     buffer += data;
+// }
 
-std::string Client::getBuffer() {
-    return buffer;
-}
+// std::string Client::getBuffer() {
+//     return buffer;
+// }
 
 bool Client::isAuthenticated() {
     return authenticated;

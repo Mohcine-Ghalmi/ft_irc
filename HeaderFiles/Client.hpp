@@ -19,15 +19,6 @@
 #define READ_BUFFER_SIZE 1024 * 32
 #define BUFFER_SIZE 1024
 
-#define LOG_INFO(custom_string)  \
-    std::cout << GREEN << "INFO: " << RESET << custom_string<< std::endl; 
-
-#define LOG_ERROR(custom_string)  \
-    std::cout << RED << "ERROR: " << RESET << custom_string<< std::endl;
-
-#define LOG_MSG(custom_string)  \
-    std::cout << custom_string<< std::endl;
-
 #define MAX_CLIENTS 10
 
 class Client {
@@ -35,7 +26,7 @@ class Client {
         int clientSocket;
         std::string nickname;
         std::string username;
-        std::string buffer;
+        // std::string buffer;
         bool authenticated;
 
     public:
@@ -44,8 +35,8 @@ class Client {
         std::string getUserName();
         void setNickName(const std::string &nick);
         void setUserName(const std::string &user);
-        void appendToBuffer(const std::string &data);
-        std::string getBuffer();
+        // void appendToBuffer(const std::string &data);
+        // std::string getBuffer();
         bool isAuthenticated();
         void authenticate();
         int getSocket();

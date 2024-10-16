@@ -9,23 +9,22 @@
 // #include <Helper.hpp>
 
 class Server {
-    public:
+    private:
         std::string port;
         int serverSocket;
         std::string password;
         std::vector<Client> clients;  // Store clients connected to the server
-        int clientSockets[MAX_CLIENTS];
-
     public:
         Server(int argc, char **argv);
         void checkArgs(int argc, char **argv);
         void start();
+        void shutdownServer();
         int getServerSocket();
         void acceptConnection();
-        void handleClientMessage(int clientSocket, const std::string &message);
-        void removeClient(int clientSocket);
+        void handleClientMessage(Client &client, const std::string &message); // for parsing and command handling 
         bool validatePassword(const std::string &clientPassword, const std::string &expectedPassword);
-        // void processClientMessage(int clientSocket);
+        bool setUpClient(std::string message, Client &client);
+        void processClienstMessage(fd_set readfds);// for getting message for client and send it to handleClientMessage
         ~Server();
 };
 
