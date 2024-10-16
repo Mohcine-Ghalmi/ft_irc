@@ -72,27 +72,101 @@ Server::Server(int argc, char **argv) {
     }
 
     std::cout << "Server started on port " << port << std::endl;
+    std::cout << "Server started with the password " << "<" << password << ">" << std::endl;
 }
 
 Server::~Server(){
-    // close(serverSocket); 
+    close(serverSocket); 
 }
 
 int Server::getServerSocket() {
     return (serverSocket);
 }
 
-// void Server::acceptConnection() {
-//     int newClientSocket = accept(serverSocket, NULL, NULL);
-//     if (newClientSocket < 0) {
-//         std::cerr << "Accept error" << std::endl;
-//         return;
-//     }
-//     clients.push_back(Client(newClientSocket));
-//     std::cout << "New client connected!" << std::endl;
-// }
+void Server::acceptConnection() {
+    int newClientSocket = accept(serverSocket, NULL, NULL);
+    if (newClientSocket < 0) {
+        std::cerr << "Accept error" << std::endl;
+        return;
+    }
 
+    std::string welcomeMessage = ":localhost 001 irssi_user :Welcome to the simple IRC server\r\n";
+    send(newClientSocket, welcomeMessage.c_str(), welcomeMessage.size(), 0);
 
+    clients.push_back(Client(newClientSocket));  // Add client to the server's client list
+    std::cout << "New client connected!" << std::endl;
+}
+
+void sendCapResponse(int clientSocket) {
+    std::string capResponse = ":localhost CAP * LS :\r\n"; // sending Empty CAP List (do not support any advanced features)
+
+    send(clientSocket, capResponse.c_str(), capResponse.size(), 0);
+    std::cout << "Sent CAP LS response to client" << std::endl;
+}
+
+void Server::handleClientMessage(int clientSocket, const std::string &message) {
+    if (message.find("CAP LS 302") != std::string::npos)
+        sendCapResponse(clientSocket);
+    else
+        std::cout << "Received from client: " << message << std::endl;
+}
+
+void Server::start() {
+    int  maxFd;
+    fd_set readfds;
+    char buffer[BUFFER_SIZE];
+
+    while (true) {
+        FD_ZERO(&readfds);
+
+        FD_SET(getServerSocket(), &readfds);
+        maxFd = getServerSocket();
+
+        for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ++it) {
+            if (it->getSocket() > 0)
+                FD_SET(it->getSocket(), &readfds); // make the client socket a memeber of fd_set 
+            if (it->getSocket() > maxFd)
+                maxFd = it->getSocket();
+        }
+
+        if (select(maxFd + 1, &readfds, NULL, NULL, NULL) < 0) {
+                perror("select error");
+                std::cout << "maxFd = " << maxFd << std::endl;
+                if (errno == EBADF)
+                    std::cout << "One of the bit sets specified an incorrect socket.\n" <<
+                     " [FD_ZERO() was probably not called before the sockets were set.]" << std::endl;
+                else if (errno == EFAULT)
+                    std::cout << "One of the bit sets pointed to a value outside the caller address space." << std::endl;
+                exit(EXIT_FAILURE);
+        }
+
+        if (FD_ISSET(getServerSocket(), &readfds))
+            acceptConnection(); // create clients
+
+        for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ) {
+            if (FD_ISSET(it->getSocket(), &readfds)) {
+                memset(buffer, 0, BUFFER_SIZE);
+                ssize_t bytesReceived = recv(it->getSocket(), buffer, BUFFER_SIZE, 0);
+
+                if (bytesReceived <= 0) {
+                    if (bytesReceived == 0)
+                        std::cout << "Client disconnected" << std::endl;
+                    else
+                        perror("recv error");
+                    close(it->getSocket());
+                    it = clients.erase(it);
+                } else {
+                    std::string clientMessage(buffer);
+                    handleClientMessage(it->getSocket(), clientMessage);
+                    ++it;
+                }
+            } else
+                ++it;
+        }
+
+    }
+    // close(serverSocket);
+}
 
 // Client *Server::accept_connections()
 // {

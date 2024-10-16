@@ -2,7 +2,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <vector>
 #include "Client.hpp"
+#include <iostream>
 // #include <Channel.hpp>
 // #include <Helper.hpp>
 
@@ -24,7 +26,6 @@ class Server {
         void removeClient(int clientSocket);
         bool validatePassword(const std::string &clientPassword, const std::string &expectedPassword);
         // void processClientMessage(int clientSocket);
-        // bool validatePassword(const std::string &clientPassword, const std::string &expectedPassword);
         ~Server();
 };
 
