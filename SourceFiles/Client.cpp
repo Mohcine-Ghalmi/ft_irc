@@ -18,13 +18,13 @@ void Client::setUserName(const std::string &user) {
     username = user;
 }
 
-// void Client::appendToBuffer(const std::string &data) {
-//     buffer += data;
-// }
+void Client::appendToBuffer(const std::string &data) {
+    buffer += data;
+}
 
-// std::string Client::getBuffer() {
-//     return buffer;
-// }
+std::string Client::getBuffer() {
+    return buffer;
+}
 
 bool Client::isAuthenticated() {
     return authenticated;
@@ -36,6 +36,10 @@ void Client::authenticate() {
 
 int Client::getSocket() {
     return clientSocket;
+}
+
+void    Client::clearBuffer() {
+    buffer.clear();
 }
 
 Client::~Client() {

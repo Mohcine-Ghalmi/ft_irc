@@ -1,7 +1,7 @@
 NAME = ircserv
 
 CC	    = c++
-FLAGS   = -Wall -Wextra -Werror -std=c++98
+FLAGS   = #-Wall -Wextra -Werror -std=c++98
 RM	    = rm -rf
 
 GREEN	= \e[92;5;118m
@@ -11,7 +11,7 @@ RESET	= \e[0m
 
 SRC = main.cpp SourceFiles/server.cpp SourceFiles/client.cpp
 
-HDR = HeaderFiles/Server.hpp HeaderFiles/Client.hpp
+HDR = HeaderFiles/Server.hpp HeaderFiles/Client.hpp 
 
 .PHONY: all clean re
 

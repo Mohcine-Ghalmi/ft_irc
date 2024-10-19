@@ -22,8 +22,8 @@ class Server {
         int getServerSocket();
         void acceptConnection();
         void handleClientMessage(Client &client, const std::string &message); // for parsing and command handling 
-        bool validatePassword(const std::string &clientPassword, const std::string &expectedPassword);
-        bool setUpClient(std::string message, Client &client);
+        bool setUpClient(Client &client);
+        void disconnectClient(Client &client);
         void processClienstMessage(fd_set readfds);// for getting message for client and send it to handleClientMessage
         ~Server();
 };

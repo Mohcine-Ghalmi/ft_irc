@@ -1,11 +1,13 @@
 #include "../HeaderFiles/Server.hpp"
 #include <typeinfo>
+#include <sstream>
+
 
 #define LOG_INFO(custom_string)  \
-    std::cout << GREEN << "INFO: " << RESET << custom_string<< std::endl; 
+    std::cout  << "INFO: " << custom_string<< std::endl; 
  
 #define LOG_ERROR(custom_string)  \
-    std::cout << RED << "ERROR: " << RESET << custom_string<< std::endl;
+    std::cout << "ERROR: " << custom_string<< std::endl;
 
 #define LOG_MSG(custom_string)  \
     std::cout << custom_string<< std::endl;
@@ -22,21 +24,21 @@ void Server::checkArgs(int argc, char **argv) {
     port = "6667";
 
     if (argc == 1) {
-        LOG_MSG(BLUE "NOTE:" RESET "The programe will run with the default server");
+        LOG_MSG(BLUE "NOTE:" "The programe will run with the default server");
     }
     else {
         if (argc > 3)
-            LOG_MSG( BLUE "NOTE:" RESET  " We will only be accepting the first two arguments. " 
-                      << "Any additional arguments will be ignored.")
+            LOG_MSG( BLUE "NOTE:"  " We will only be accepting the first two arguments. " 
+                      << "Any additional arguments will be ign.")
         if (argc == 2) 
-            LOG_MSG(BLUE "WARNING" RESET " The program is running without a password.");
+            LOG_MSG(BLUE "WARNING" " The program is running without a password.");
         if (!isall_objsdigits(argv[1])) {LOG_ERROR("The programe will run with the default Port");}
         else {
             char *endptr;
             long int result = strtol(argv[1], &endptr, 10);
 
                 if (*endptr != '\0' || result == LONG_MIN || result == LONG_MAX) {
-                    LOG_MSG(BLUE "NOTE:" RESET "The programe will run with the default Port");
+                    LOG_MSG(BLUE "NOTE:" "The programe will run with the default Port");
                 }
                 else {
                     port = argv[1];
@@ -97,13 +99,13 @@ void sendHellGate(int client_socket, std::string name) {
     std::string hellGate = 
         ":localhost 001 " + name + "\n"
         "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\r\n"
-        "    🔥      "RED"    Welcome to       🔥\n"
-        "    🔥      "RED"      Hell!          🔥\n"
+        "    🔥          Welcome to       🔥\n"
+        "    🔥            Hell!          🔥\n"
         "    🔥                           🔥\n"
-        "    🔥   👿 "RED" Beware of the       🔥\n"
-        "    🔥   "RED"Darkness and Flames!    🔥\n"
+        "    🔥   👿  Beware of the       🔥\n"
+        "    🔥   Darkness and Flames!    🔥\n"
         "    🔥                           🔥\n"
-        "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥"RESET"\r\n";
+        "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\r\n";
 
     // Send the hellGate message to the client
     send(client_socket, hellGate.c_str(), hellGate.length(), 0);
@@ -117,102 +119,88 @@ void Server::acceptConnection() {
     }
 
     clients.push_back(Client(newClientSocket));  // Add client to the server's client list
-    sendHellGate(newClientSocket, "mohcine");
+    // sendHellGate(newClientSocket, "newUser");
 }
 
-bool Server::setUpClient(std::string message, Client &client) {
-    // if (!client.isAuthenticated() && !password.empty()) {
-    //     std::string passRequest = ":localhost NOTICE * :Please provide your password using the PASS command.\r\n";
-    //     send(client.getSocket(), passRequest.c_str(), passRequest.size(), 0);
+std::vector<std::string> splitMessages(const std::string &buffer) {
+    std::vector<std::string> lines;
+    std::istringstream stream(buffer);
+    std::string line;
+    
+    while (std::getline(stream, line))
+        lines.push_back(line);
+    
+    return lines;
+}
 
-    //     if (message.find("PASS") != std::string::npos) {
-    //         std::string pass = message.substr(5);  // Extract password
-    //         if (validatePassword(pass, password)) {
-    //             client.authenticate();
-    //             return (true);
-    //         } else {
-    //             std::string incorrectPassMsg = ":localhost NOTICE * :Incorrect password. Try again.\r\n";
-    //             send(client.getSocket(), incorrectPassMsg.c_str(), incorrectPassMsg.size(), 0);
-    //         }
-    //     }
-    // }
+// void Server::disconnectClient(Client &client) {
+//     std::cout << "Disconnecting client " << client.getNickName() << "..." << std::endl;
+//     close(client.getSocket()); // Close the socket
+//     // Remove the client from the list of connected clients
+//     clients.erase(std::remove_if(clients.begin(), clients.end(), [&](const Client& c) {
+//         return c.getSocket() == client.getSocket();
+//     }), clients.end());
+//     std::cout << "Client disconnected." << std::endl;
+// }
 
-    // // If PASS succeeded, proceed to request NICK
+bool Server::setUpClient(Client &client) {
+    std::string msg = client.getBuffer();  // Get the log of messages
 
-    if (!client.isAuthenticated()) {
-        std::string nickRequest = ":localhost NOTICE * :Please provide your nickname using the NICK command.\r\n";
-        send(client.getSocket(), nickRequest.c_str(), nickRequest.size(), 0);
+    std::vector<std::string> messages = splitMessages(client.getBuffer());
+    std::string pass, nick;
 
-        if (message.find("NICK") != std::string::npos) {
-            std::string nick = message.substr(5);  // Extract nickname
-            std::cout << nick << std::endl;
+    // Iterate through each line of the buffer
+    for (const std::string &message : messages) {
+        // Check if the line starts with "PASS"
+        if (message.find("PASS") == 0) {
+            pass = message.substr(5);  // Extract the password (characters after "PASS ")
+            pass = pass.substr(0, pass.length() - 1); // deleting the new line 
+            if (pass != password) {
+                std::cout <<  "invalide password" <<  std::endl;
+                return (0);
+            } else
+                std::cout << "valide password" << std::endl;
+
+        }
+        // Check if the line starts with "NICK"
+        else if (message.find("NICK") == 0) {
+            nick = message.substr(5);  // Extract the nickname (characters after "NICK ")
             client.setNickName(nick);
-            client.authenticate();
-            std::string nickName = ":localhost NOTICE * :your nickname is settled\r\n";
-            send(client.getSocket(), nickName.c_str(), nickName.size(), 0);
-            return (true);
-        } else {
-            std::string incorrectNickMsg = ":localhost NOTICE * :Please provide a valid NICK command.\r\n";
-            send(client.getSocket(), incorrectNickMsg.c_str(), incorrectNickMsg.size(), 0);
+            sendHellGate(client.getSocket(), nick);
         }
     }
-    return (false);
-    // // If NICK succeeded, proceed to request USER
-    // retry = 3;
-    // authenticated = false;
 
-    // while (retry > 0 && !authenticated) {
-    //     std::string userRequest = ":localhost NOTICE * :Please provide your user information using the USER command.\r\n";
-    //     send(client.getSocket(), userRequest.c_str(), userRequest.size(), 0);
-
-    //     if (message.find("USER") != std::string::npos) {
-    //         std::string user = message.substr(5);  // Extract user information
-    //         client.setUserName(user);
-    //         authenticated = true;
-    //     } else {
-    //         std::string incorrectUserMsg = ":localhost NOTICE * :Please provide a valid USER command.\r\n";
-    //         send(client.getSocket(), incorrectUserMsg.c_str(), incorrectUserMsg.size(), 0);
-    //         retry--;
-    //     }
-    // }
-
-    // if (!authenticated) {
-    //     std::string disconnectMessage = ":localhost NOTICE * :Too many incorrect attempts. Disconnecting.\r\n";
-    //     send(client.getSocket(), disconnectMessage.c_str(), disconnectMessage.size(), 0);
-    //     close(client.getSocket());  // Disconnect after failed attempts
-    //     return;
-    // }
-
-    // // If everything is correct, send a welcome message
-    // std::string welcomeMessage = ":localhost 001 " + client.getNickName() + " :Welcome to the IRC server\r\n";
-    // send(client.getSocket(), welcomeMessage.c_str(), welcomeMessage.size(), 0);
-
-    std::cout << "Client setup completed successfully for " << client.getNickName() << std::endl;
+    return !pass.empty() && !nick.empty();
 }
-
 
 void sendCapResponse(int clientSocket) {
     std::string capResponse = ":localhost CAP * LS :\r\n"; // sending Empty CAP List (do not support any advanced features)
 
     send(clientSocket, capResponse.c_str(), capResponse.size(), 0);
-    std::cout << "Sent CAP LS response to client" << std::endl;
+    std::cout << "Sent CAP LS response to client"  << std::endl;
+}
+
+void ping(std::string message, int ClientSocket) {
+    std::string pingToken = message.substr(5);
+    std::string pongResponse = "PONG " + pingToken + "\r\n";
+
+    // Send PONG response back to the client (to stay connectes withouting the connection the irssi client wil restart if no pong send recived)
+    send(ClientSocket, pongResponse.c_str(), pongResponse.size(), 0);
+    std::cout << message;
+    std::cout << pongResponse;
 }
 
 void Server::handleClientMessage(Client &client, const std::string &message) {
+    client.appendToBuffer(message);
     if (message.find("CAP LS 302") != std::string::npos)
         sendCapResponse(client.getSocket());
     else if (message.find("PING") == 0) {
-        std::string pingToken = message.substr(5);
-        std::string pongResponse = "PONG " + pingToken + "\r\n";
-
-        // Send PONG response back to the client (to stay connectes without reseting the connection // the irssi client wil restart if no pong send recived)
-        send(client.getSocket(), pongResponse.c_str(), pongResponse.size(), 0);
-        std::cout << message;
-        std::cout << pongResponse;
+       ping(message, client.getSocket());
     } else {
-        std::cout << "Received from client: " << message << std::endl;
-        if (setUpClient(message, client)) {
+        std::cout << "Received from client: "  << message << std::endl;
+        if (setUpClient(client)) {
             std::cout << "Client setup completed successfully for " << client.getNickName() << std::endl;
+            client.clearBuffer();
         }
     }
 }
@@ -221,8 +209,8 @@ void Server::processClienstMessage(fd_set readfds) {
     char buffer[BUFFER_SIZE];
 
     for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ) {
+        memset(buffer, 0, BUFFER_SIZE);
         if (FD_ISSET(it->getSocket(), &readfds)) {
-            memset(buffer, 0, BUFFER_SIZE);
             ssize_t bytesReceived = recv(it->getSocket(), buffer, BUFFER_SIZE, 0);
 
             if (bytesReceived <= 0) {
@@ -270,8 +258,9 @@ void Server::start() {
     }
 }
 
-bool Server::validatePassword(const std::string &clientPassword, const std::string &expectedPassword) {
-    return expectedPassword.empty() || clientPassword == expectedPassword; // if there's no password or password matched return turue 
+void Server::shutdownServer() {
+    std::cout << "server shutdown ... !" << std::endl;
+
 }
 
 // int Server::process_client_message(int clientfd)
@@ -282,7 +271,7 @@ bool Server::validatePassword(const std::string &clientPassword, const std::stri
 //         //                         if (ret == 0) { 
 //         //     LOG_INFO("Client closed connection");  // Graceful close
 //         // } else {
-//         //     LOG_ERROR("Error occurred on socket: " << strerror(errno)); 
+//         //     LOG_ERROR("Error occu on socket: " << strerror(errno)); 
 //         // }
 //         LOG_ERROR("To remove client");
 //         FD_CLR(clientfd, &(this->all_objs));
@@ -326,7 +315,7 @@ bool Server::validatePassword(const std::string &clientPassword, const std::stri
 //             // if the channel exists :
 //             /*
 //                whether or not your
-//                 request to JOIN that channel is honoured depends on the current modes
+//                 request to JOIN that channel is hono depends on the current modes
 //                 of the channel. For example, if the channel is invite-only, (+i),
 //                 then you may only join if invited.  As part of the protocol, a user
 //                 may be a part of several channels at once, but a limit of ten (10)
@@ -363,7 +352,7 @@ bool Server::validatePassword(const std::string &clientPassword, const std::stri
 //             //                [<ban mask>]
 
 //             //    The MODE command is provided so that channel operators may change the
-//             //    characteristics of `their' channel.  It is also required that servers
+//             //    characteristics of `their' channel.  It is also requ that servers
 //             //    be able to change channel modes so that channel operators may be
 //             //    created.
 
@@ -395,9 +384,4 @@ bool Server::validatePassword(const std::string &clientPassword, const std::stri
 //         }
 //         // send message by client..
 //     }
-// }
-
-// int Server::broadcast_message(std::string message, Channel* channel)
-// {
-
 // }

@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <array>
 #include <unistd.h>
+#include <vector>
 
 #define GREEN   "\033[32m"
 #define RED     "\033[31m"
@@ -26,8 +27,8 @@ class Client {
         int clientSocket;
         std::string nickname;
         std::string username;
-        // std::string buffer;
         bool authenticated;
+        std::string buffer;
 
     public:
         Client(int socket);
@@ -35,10 +36,11 @@ class Client {
         std::string getUserName();
         void setNickName(const std::string &nick);
         void setUserName(const std::string &user);
-        // void appendToBuffer(const std::string &data);
-        // std::string getBuffer();
         bool isAuthenticated();
         void authenticate();
         int getSocket();
+        void appendToBuffer(const std::string &data);
+        std::string getBuffer();
+        void    clearBuffer();
         ~Client();
 };
