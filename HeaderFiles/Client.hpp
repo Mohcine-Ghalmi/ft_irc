@@ -22,25 +22,51 @@
 
 #define MAX_CLIENTS 10
 
+#define LOG_INFO(custom_string)  \
+    std::cout  << "INFO: " << custom_string<< std::endl; 
+ 
+#define LOG_ERROR(custom_string)  \
+    std::cout << "ERROR: " << custom_string<< std::endl;
+
+#define LOG_MSG(custom_string)  \
+    std::cout << custom_string<< std::endl;
+
+#define LOG_CLIENT(custom_string) \
+    std::cout << GREEN "Client <= " RESET << custom_string << std::endl;
+
+#define LOG_SERVER(custom_string) \
+    std::cout << RED "Server => " RESET << custom_string << std::endl;
+
+
 class Client {
     private:
         int clientSocket;
-        std::string nickname;
-        std::string username;
+        std::string nickName;
+        std::string userName;
+        std::string hostName;
+        std::string realName;
         bool authenticated;
         std::string buffer;
+        std::string password;
 
     public:
+
         Client(int socket);
+        ~Client();
+        void    clearBuffer();
+       
+        int getSocket();
+        std::string getBuffer();
         std::string getNickName();
         std::string getUserName();
+        bool isAuthenticated();
+       
+        std::string getPassword();
         void setNickName(const std::string &nick);
         void setUserName(const std::string &user);
-        bool isAuthenticated();
-        void authenticate();
-        int getSocket();
+        void setPassword(std::string &password);
+        void setHostName(const std::string &host);
+        void setRealName(const std::string &real);
         void appendToBuffer(const std::string &data);
-        std::string getBuffer();
-        void    clearBuffer();
-        ~Client();
+        void authenticate();
 };

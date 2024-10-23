@@ -16,15 +16,21 @@ class Server {
         std::vector<Client> clients;  // Store clients connected to the server
     public:
         Server(int argc, char **argv);
-        void checkArgs(int argc, char **argv);
         void start();
-        void shutdownServer();
+        ~Server();
+        
         int getServerSocket();
+        
+        bool setUpClient(Client &client);
+        
+        void checkArgs(int argc, char **argv);
         void acceptConnection();
         void handleClientMessage(Client &client, const std::string &message); // for parsing and command handling 
-        bool setUpClient(Client &client);
-        void disconnectClient(Client &client);
         void processClienstMessage(fd_set readfds);// for getting message for client and send it to handleClientMessage
-        ~Server();
+        
+        
+        bool processPassCommand(Client &client, const std::string &message);
+        bool processNickCommand(Client &client, const std::string &message);
+        bool processUserCommand(Client &client, const std::string &message);
 };
 
