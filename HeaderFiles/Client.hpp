@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <array>
 #include <unistd.h>
+#include "Replies.hpp"
 #include <vector>
 
 #define GREEN   "\033[32m"
@@ -37,8 +38,9 @@
 #define LOG_SERVER(custom_string) \
     std::cout << RED "Server => " RESET << custom_string << std::endl;
 
+class Replies;
 
-class Client {
+class Client{
     private:
         int clientSocket;
         std::string nickName;
@@ -48,17 +50,18 @@ class Client {
         bool authenticated;
         std::string buffer;
         std::string password;
+        Replies replies;
 
     public:
 
         Client(int socket);
         ~Client();
-        void    clearBuffer();
        
         int getSocket();
         std::string getBuffer();
         std::string getNickName();
         std::string getUserName();
+        std::string getHostname();
         bool isAuthenticated();
        
         std::string getPassword();
@@ -69,4 +72,7 @@ class Client {
         void setRealName(const std::string &real);
         void appendToBuffer(const std::string &data);
         void authenticate();
+
+        void    clearBuffer();
+        void sendReply(int replyNumber, Client &client);
 };

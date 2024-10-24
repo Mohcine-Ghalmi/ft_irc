@@ -90,9 +90,8 @@ int Server::getServerSocket() {
     return (serverSocket);
 }
 
-void sendHellGate(int client_socket, std::string name) {
+void sendHellGate(int client_socket) {
     std::string hellGate = 
-        ":localhost 001 " + name + "\n"
         "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\r\n"
         "    🔥          Welcome to       🔥\n"
         "    🔥            Hell!          🔥\n"
@@ -131,6 +130,7 @@ bool Server::processPassCommand(Client &client, const std::string &message) {
     if (message.find("PASS") == 0 && client.getPassword().empty()) {
         if (message.length() <= 5) {
             LOG_SERVER("Error: PASS command provided without a value.");
+            // client.sendReply(462, client);
             return true;
         }
 
@@ -160,6 +160,7 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
         }
 
         client.setNickName(message.substr(5));
+        client.sendReply(001, client);// set you're nickname
         LOG_SERVER("Client NICK setup");
         return true;
     }
@@ -188,6 +189,7 @@ bool Server::processUserCommand(Client &client, const std::string &message) {
         client.setUserName(username);
         client.setHostName(hostname);
         client.setRealName(realname);
+        client.sendReply(002, client);// set you're host
         LOG_SERVER("Client USER setup: username=" + username + ", hostname=" + hostname + ", realname=" + realname);
         return true;
     }
@@ -206,12 +208,10 @@ bool Server::setUpClient(Client &client) {
         if (processPassCommand(client, message)) {
             messages.erase(messages.begin() + i);
             continue;
-        } 
-        else if (processNickCommand(client, message)) {
+        }else if (processNickCommand(client, message)) {
             messages.erase(messages.begin() + i);
             continue;
-        } 
-        else if (processUserCommand(client, message)) {
+        }else if (processUserCommand(client, message)) {
             messages.erase(messages.begin() + i);
             continue;
         } 
@@ -226,6 +226,23 @@ bool Server::setUpClient(Client &client) {
 
     client.authenticate();
     return true;
+}
+
+void Server::updateNickUser(Client &client) {
+    std::vector<std::string> messages = splitMessages(client.getBuffer());
+
+    for (std::vector<std::string>::size_type i = 0; i < messages.size(); ) {
+        const std::string &message = messages[i];
+
+        if (processNickCommand(client, message)) {
+            messages.erase(messages.begin() + i);
+            continue;
+        } else if (processUserCommand(client, message)) {
+            messages.erase(messages.begin() + i);
+            continue;
+        } else
+            ++i;
+    }
 }
 
 void sendCapResponse(int clientSocket) {
@@ -255,10 +272,11 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
        ping(message, client.getSocket());
     } else {
         if (setUpClient(client)) {
-            sendHellGate(client.getSocket(), client.getNickName());
+            sendHellGate(client.getSocket());
             LOG_SERVER("Client setup completed successfully for " << client.getNickName());
             client.clearBuffer();
-        }
+        } else 
+            updateNickUser(client);
     }
 }
 

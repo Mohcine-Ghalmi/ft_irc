@@ -5,8 +5,7 @@
 #include <vector>
 #include "Client.hpp"
 #include <iostream>
-// #include <Channel.hpp>
-// #include <Helper.hpp>
+#include "Replies.hpp"
 
 class Server {
     private:
@@ -32,5 +31,6 @@ class Server {
         bool processPassCommand(Client &client, const std::string &message);
         bool processNickCommand(Client &client, const std::string &message);
         bool processUserCommand(Client &client, const std::string &message);
+        void updateNickUser(Client &client);
 };
 

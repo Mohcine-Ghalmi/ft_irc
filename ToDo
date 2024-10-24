@@ -2,3 +2,8 @@ the irssi client need to be disconnected after enter an invalide passwrord
 
 if password was empty spaces
 
+the client must send PASS command first befor nick and user
+
+
+/connect localhost 6667 0101 sleeps mohcine
+/quote USER username  hostname localhost :realname 

@@ -1,7 +1,7 @@
 NAME = ircserv
 
 CC	    = c++
-FLAGS   = #-Wall -Wextra -Werror -std=c++98
+FLAGS   = -Wall -Wextra -Werror -std=c++98
 RM	    = rm -rf
 
 GREEN	= \e[92;5;118m
@@ -9,9 +9,9 @@ YELLOW	= \e[93;5;226m
 GRAY	= \e[33;2;37m
 RESET	= \e[0m
 
-SRC = main.cpp SourceFiles/server.cpp SourceFiles/client.cpp
+SRC = main.cpp SourceFiles/server.cpp SourceFiles/client.cpp SourceFiles/Replies.cpp
 
-HDR = HeaderFiles/Server.hpp HeaderFiles/Client.hpp 
+HDR = HeaderFiles/Server.hpp HeaderFiles/Client.hpp HeaderFiles/Replies.hpp
 
 .PHONY: all clean re
 
