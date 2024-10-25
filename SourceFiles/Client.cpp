@@ -31,6 +31,14 @@ void Client::sendReply(int replyNumber, Client &client) {
         break;
     case 002:
         message = replies.RPL_YOURHOST(client.getHostname(), client.getNickName());
+        break;
+    case 003:
+        message = replies.RPL_CREATED(client.getHostname(), client.getNickName());
+    case 004:
+        message = replies.RPL_MYINFO(client.getHostname(), client.getNickName());
+        break;
+    case 005:
+        message = replies.RPL_ISUPPORT(client.getHostname());
     case 462:
         message = replies.ERR_NEEDMOREPARAMS(client.getSocket());
         break;

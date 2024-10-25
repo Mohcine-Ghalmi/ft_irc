@@ -112,7 +112,7 @@ void Server::acceptConnection() {
         return;
     }
 
-    clients.push_back(Client(newClientSocket));  // Add client to the server's client list
+    clients.push_back(Client(newClientSocket)); // Add client to the server's client list
 }
 
 std::vector<std::string> splitMessages(const std::string &buffer) {
