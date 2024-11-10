@@ -19,6 +19,7 @@ class Server {
         ~Server();
         
         int getServerSocket();
+        Client* getClientByNick(const std::string &targetNick);
         
         bool setUpClient(Client &client);
         
@@ -32,5 +33,7 @@ class Server {
         bool processNickCommand(Client &client, const std::string &message);
         bool processUserCommand(Client &client, const std::string &message);
         void updateNickUser(Client &client);
+        bool isNickTaken(std::string &nick);
+        bool processPrivMsgCommand(Client &sender, const std::string &message);
 };
 

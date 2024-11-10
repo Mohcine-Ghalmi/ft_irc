@@ -24,27 +24,34 @@ void Client::authenticate() { authenticated = true;}
 
 void Client::sendReply(int replyNumber, Client &client) {
     std::string message;
+    
     switch (replyNumber) {
-    
-    case 001:
-        message = replies.RPL_WELCOME(client.getNickName(), client.getUserName());
-        break;
-    case 002:
-        message = replies.RPL_YOURHOST(client.getHostname(), client.getNickName());
-        break;
-    case 003:
-        message = replies.RPL_CREATED(client.getHostname(), client.getNickName());
-    case 004:
-        message = replies.RPL_MYINFO(client.getHostname(), client.getNickName());
-        break;
-    case 005:
-        message = replies.RPL_ISUPPORT(client.getHostname());
-    case 462:
-        message = replies.ERR_NEEDMOREPARAMS(client.getSocket());
-        break;
-    
-    default:
-        break;
+        case 001:
+            message = replies.RPL_WELCOME(client.getNickName(), client.getUserName());
+            break;
+        case 002:
+            message = replies.RPL_YOURHOST(client.getHostname(), client.getNickName());
+            break;
+        case 003:
+            message = replies.RPL_CREATED(client.getHostname(), client.getNickName());
+        case 004:
+            message = replies.RPL_MYINFO(client.getHostname(), client.getNickName());
+            break;
+        case 005:
+            message = replies.RPL_ISUPPORT(client.getHostname());
+            break;
+        case 464:
+            message = replies.ERR_NICKNAMEINUSE(client.getHostname(), client.getNickName());
+            break;
+        case 433:
+            message = replies.ERR_NICKNAMEINUSE(client.getHostname(), client.getNickName());
+            break;
+        case 462:
+            message = replies.ERR_NEEDMOREPARAMS(client.getSocket());
+            break;
+        
+        default:
+            break;
     }
     send(this->getSocket(), message.c_str(), message.length(), 0);
 }

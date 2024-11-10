@@ -11,7 +11,7 @@ class Replies {
         std::string RPL_MYINFO(const std::string &serverName, const std::string &nickName);     // 004
         std::string RPL_ISUPPORT(const std::string& serverName);                                // 005
 
-        std::string ERR_NEEDMOREPARAMS(int clientSocket);
+        std::string ERR_PASSWDMISMATCH(const std::string &clientNick);                            // 464 
+        std::string ERR_NICKNAMEINUSE(const std::string &serverName, const std::string &nickname);// 433
+        std::string ERR_NEEDMOREPARAMS(int clientSocket);                                         // 461
 };
-
-

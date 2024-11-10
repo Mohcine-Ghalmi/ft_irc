@@ -24,7 +24,7 @@
 #define MAX_CLIENTS 10
 
 #define LOG_INFO(custom_string)  \
-    std::cout  << "INFO: " << custom_string<< std::endl; 
+    std::cout  << "INFO: " << custom_string << RESET << std::endl; 
  
 #define LOG_ERROR(custom_string)  \
     std::cout << "ERROR: " << custom_string<< std::endl;
@@ -32,11 +32,11 @@
 #define LOG_MSG(custom_string)  \
     std::cout << custom_string<< std::endl;
 
-#define LOG_CLIENT(custom_string) \
-    std::cout << GREEN "Client <= " RESET << custom_string << std::endl;
+#define LOG_CLIENT(label, custom_string) \
+    std::cout << GREEN "Client "<< label <<" <= " RESET << custom_string << std::endl;
 
 #define LOG_SERVER(custom_string) \
-    std::cout << RED "Server => " RESET << custom_string << std::endl;
+    std::cout << BLUE "Server => " RESET << custom_string << std::endl;
 
 class Replies;
 

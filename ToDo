@@ -1,9 +1,11 @@
-the irssi client need to be disconnected after enter an invalide passwrord
-
-if password was empty spaces
-
-the client must send PASS command first befor nick and user
-
-
 /connect localhost 6667 0101 sleeps mohcine
 /quote USER username  hostname localhost :realname 
+
+
+# if u wanna send private message u need to use /window goto target_nickName after that u dent message using /msg target_nickname hello
+
+[X]. send/recv message from and to client 
+[ ]. reply for nick notfound
+[ ]. send/recv message from and to channel
+[ ]. update nick name message {You're now known as newNick}
+[ ]. add at logging {Mode change [+Ziw] for user}

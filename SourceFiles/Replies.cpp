@@ -1,5 +1,6 @@
 #include "../HeaderFiles/Replies.hpp"
 #include <sstream>
+#include <iostream>
 
 std::string Replies::ERR_NEEDMOREPARAMS(int clientSocket) {
     std::stringstream ss;
@@ -8,8 +9,10 @@ std::string Replies::ERR_NEEDMOREPARAMS(int clientSocket) {
 }
 
 std::string Replies::RPL_WELCOME(std::string nickName, std::string userName) {
-    return  ":localhost 001 " + nickName + " :Welcome to the Hell! Network, " + nickName \
-            + "[!" + userName + "@localhost]\r\n";
+    std::stringstream ss;
+    ss << ":localhost 001 " << nickName << " :Welcome to the Hell! Network, " << nickName
+         << "[!" << userName << "@localhost]\r\n";
+    return ss.str();
 }
 
 std::string Replies::RPL_YOURHOST(const std::string &serverName, const std::string &nickName) {
@@ -63,3 +66,16 @@ std::string Replies::RPL_ISUPPORT(const std::string& serverName) {
     return response.str();
 }
 
+std::string Replies::ERR_NICKNAMEINUSE(const std::string &serverName, const std::string &nickname) {
+    std::stringstream ss;
+
+    ss << ":" << serverName << " 433 " << nickname << " :Nickname is already in use\r\n";
+    return ss.str();
+}
+
+std::string Replies::ERR_PASSWDMISMATCH(const std::string &clientNick) {
+    std::stringstream ss;
+
+    ss <<  ":" << clientNick << " 464 " << clientNick << " :Password incorrect\r\n";
+    return ss.str();
+}

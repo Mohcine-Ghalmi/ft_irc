@@ -2,44 +2,28 @@
 #include <typeinfo>
 #include <sstream>
 
-bool isall_objsdigits(std::string str) 
-{
-    for (size_t i = 0; i < str.length(); i++)
-        if (!std::isdigit((unsigned char)str[i]))
-            return false;
-    return true;
-}
-
 void Server::checkArgs(int argc, char **argv) {
-    port = "6667";
-
-    // if (argc != 3) {
-    //     std::cerr << RED "Usage: ./a.out <port> <password>" RESET << std::endl;
-    //     exit(EXIT_FAILURE);
-    // }
-
-    if (argc == 1) {
-        LOG_MSG(BLUE "NOTE:" "The programe will run with the default server");
+    if (argc != 3) {
+        LOG_ERROR(RED "Invalid number of arguments. Usage: ./server <port> <password>");
+        exit(EXIT_FAILURE);
     }
-    else {
-        if (argc > 3)
-            LOG_MSG( BLUE "NOTE:"  " We will only be accepting the first two arguments. " 
-                      << "Any additional arguments will be ignored.")
-        if (argc == 2) 
-            LOG_MSG(BLUE "WARNING" " The program is running without a password.");
-        if (!isall_objsdigits(argv[1])) {LOG_ERROR("The programe will run with the default Port");}
-        else {
-            char *endptr;
-            long int result = strtol(argv[1], &endptr, 10);
 
-                if (*endptr != '\0' || result == LONG_MIN || result == LONG_MAX) {
-                    LOG_MSG(BLUE "NOTE:" "The programe will run with the default Port");
-                }
-                else {
-                    port = argv[1];
-                    password = (argv[2] ? argv[2] : "");
-                }
-            }
+    try {
+        int portValue = std::stoi(argv[1]);
+        if (portValue < 1024 || portValue > 65535) {
+            LOG_ERROR(RED "Invalid port \"" << argv[1] << "\". Please specify a port number between 1024 and 65535.");
+            exit(EXIT_FAILURE);
+        }
+        port = std::to_string(portValue);
+    } catch (const std::invalid_argument&) {
+        LOG_ERROR(RED "Invalid port \"" << argv[1] << "\" provided. Please specify a numeric port.");
+        exit(EXIT_FAILURE);
+    }
+
+    password = argv[2];
+    if (password.length() < 4) {
+        LOG_ERROR(RED "Password is too short. Please provide a password with at least 4 characters.");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -101,7 +85,6 @@ void sendHellGate(int client_socket) {
         "    🔥                           🔥\n"
         "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\r\n";
 
-    // Send the hellGate message to the client
     send(client_socket, hellGate.c_str(), hellGate.length(), 0);
 }
 
@@ -140,6 +123,7 @@ bool Server::processPassCommand(Client &client, const std::string &message) {
             pass.erase(pass.length() - 1);
 
         if (pass != password) {
+            // client.sendReply(464, client); // we will not use this because pass is the first thing we check so we don't have enought data 
             LOG_SERVER("Invalid password");
             client.clearBuffer();
             return false;
@@ -152,6 +136,17 @@ bool Server::processPassCommand(Client &client, const std::string &message) {
     return false;
 }
 
+bool Server::isNickTaken(std::string &nick) {
+    for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ++it)
+        if (it->getNickName() == nick)
+            return true; // Nickname is already taken
+    return false;
+}
+
+void removeCarriageReturn(std::string &str) {
+    str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
+}
+
 bool Server::processNickCommand(Client &client, const std::string &message) {
     if (message.find("NICK") == 0) {
         if (message.length() <= 5) {
@@ -159,14 +154,21 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
             return true;
         }
 
-        client.setNickName(message.substr(5));
-        client.sendReply(001, client);// set you're nickname
+        std::string newNick = message.substr(5);
+        removeCarriageReturn(newNick);
+        if (isNickTaken(newNick)) {
+            LOG_SERVER("Error: Nickname already taken.");
+            client.sendReply(443, client);
+            return false;
+        }
+
+        client.setNickName(newNick);
         LOG_SERVER("Client NICK setup");
         return true;
     }
     return false;
 }
-// /quote USER myusername myhostname localhost :MyCustomRealName
+// FOR irssi /quote USER myusername myhostname localhost :MyCustomRealName
 bool Server::processUserCommand(Client &client, const std::string &message) {
     if (message.find("USER") == 0) {
         std::stringstream ss(message.substr(5));
@@ -189,7 +191,6 @@ bool Server::processUserCommand(Client &client, const std::string &message) {
         client.setUserName(username);
         client.setHostName(hostname);
         client.setRealName(realname);
-        client.sendReply(002, client);// set you're host
         LOG_SERVER("Client USER setup: username=" + username + ", hostname=" + hostname + ", realname=" + realname);
         return true;
     }
@@ -223,7 +224,8 @@ bool Server::setUpClient(Client &client) {
         LOG_SERVER("Error: PASS, NICK, and USER must all be provided.");
         return false;
     }
-
+    client.sendReply(001, client);// set you're nickname
+    client.sendReply(002, client);// set you're host
     client.authenticate();
     return true;
 }
@@ -236,6 +238,7 @@ void Server::updateNickUser(Client &client) {
 
         if (processNickCommand(client, message)) {
             messages.erase(messages.begin() + i);
+            client.sendReply(001, client);
             continue;
         } else if (processUserCommand(client, message)) {
             messages.erase(messages.begin() + i);
@@ -259,24 +262,65 @@ void ping(std::string message, int ClientSocket) {
     // Send PONG response back to the client (to stay connecte without it the connection to
     // irssi client will restart if no pong send)
     send(ClientSocket, pongResponse.c_str(), pongResponse.size(), 0);
-    LOG_CLIENT(message);
+    LOG_CLIENT(ClientSocket, message);
     LOG_SERVER(pongResponse);
+}
+
+Client* Server::getClientByNick(const std::string &targetNick) {
+    for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ++it)
+        if (it->getNickName() == targetNick)
+            return &(*it);
+    return NULL;
+}
+
+bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
+    if (message.find("PRIVMSG") != 0)
+        return false;
+
+    std::istringstream ss(message.substr(8));
+    std::string targetNick, messageText;
+    ss >> targetNick;
+    getline(ss, messageText);
+
+    if (!messageText.empty() && messageText[0] == ' ')
+        messageText = messageText.substr(1);
+
+    Client *targetClient = getClientByNick(targetNick);
+    if (!targetClient) {
+        LOG_SERVER("Error: No such nickname found: " + targetNick);
+        // sender.sendReply(401, sender);  // ERR_NOSUCHNICK 
+        return false;
+    }
+
+    removeCarriageReturn(messageText);
+    std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + targetNick + " " + messageText + "\r\n";
+    int sendResult = send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
+    if (sendResult == -1) {
+        LOG_SERVER("Error sending message to " + targetNick);
+        return false;
+    }
+
+    LOG_SERVER("Message sent successfully to " + targetNick);
+    return true;
 }
 
 void Server::handleClientMessage(Client &client, const std::string &message) {
     client.appendToBuffer(message);
-    std::cout << "Received from client: "  << message ;
+    LOG_CLIENT(client.getSocket(), message);
     if (message.find("CAP LS 302") != std::string::npos)
         sendCapResponse(client.getSocket());
-    else if (message.find("PING") == 0) {
+    else if (message.find("PING") == 0)
        ping(message, client.getSocket());
-    } else {
+    else {
         if (setUpClient(client)) {
             sendHellGate(client.getSocket());
             LOG_SERVER("Client setup completed successfully for " << client.getNickName());
-            client.clearBuffer();
-        } else 
+        } else {
             updateNickUser(client);
+            if (processPrivMsgCommand(client, message))
+                LOG_INFO("message sent");
+        }
+        client.clearBuffer();
     }
 }
 
@@ -289,7 +333,7 @@ void Server::processClienstMessage(fd_set readfds) {
             ssize_t bytesReceived = recv(it->getSocket(), buffer, BUFFER_SIZE, 0);
 
             if (bytesReceived <= 0) {
-                if (bytesReceived == 0) {LOG_SERVER("Client disconnected ");}
+                if (bytesReceived == 0) {LOG_INFO(RED "Client disconnected ");}
                 else
                     perror("recv error");
                 close(it->getSocket());
@@ -301,7 +345,7 @@ void Server::processClienstMessage(fd_set readfds) {
                 if (it->getPassword() != password && !it->getPassword().empty()) {
                     close(it->getSocket());
                     it = clients.erase(it);
-                    LOG_SERVER("client out");
+                    LOG_INFO(RED "client out");
                     continue;
                 }
                 ++it;
