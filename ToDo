@@ -5,7 +5,10 @@
 # if u wanna send private message u need to use /window goto target_nickName after that u dent message using /msg target_nickname hello
 
 [X]. send/recv message from and to client 
-[ ]. reply for nick notfound
-[ ]. send/recv message from and to channel
+[X]. reply for nick in use
+[X]. CHECK FOR CTR + D (sending with no new line )
+[X]. no such nickname/channel for sen/recv mssg reply
+[X]. send message to specify users at ones (split nicknames/channels)
 [ ]. update nick name message {You're now known as newNick}
 [ ]. add at logging {Mode change [+Ziw] for user}
+[ ]. send/recv message from and to channel

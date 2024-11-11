@@ -1,4 +1,5 @@
 #include "../HeaderFiles/Client.hpp"
+#include <sstream>
 
 Client::Client(int socket) : clientSocket(socket),  authenticated(false), password("") {}
 Client::~Client() { /**close(clientSocket);**/}
@@ -40,18 +41,25 @@ void Client::sendReply(int replyNumber, Client &client) {
         case 005:
             message = replies.RPL_ISUPPORT(client.getHostname());
             break;
-        case 464:
-            message = replies.ERR_NICKNAMEINUSE(client.getHostname(), client.getNickName());
-            break;
-        case 433:
-            message = replies.ERR_NICKNAMEINUSE(client.getHostname(), client.getNickName());
-            break;
         case 462:
             message = replies.ERR_NEEDMOREPARAMS(client.getSocket());
             break;
-        
         default:
             break;
     }
     send(this->getSocket(), message.c_str(), message.length(), 0);
+}
+
+void Client::ERR_NICKNAMEINUSE(Client &client, const std::string &newNick) {
+    std::stringstream ss;
+
+    ss << ":" << client.getHostname() << " 433 " << client.getNickName() << " " << newNick <<" :Nickname is already in use\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::ERR_NOSUCHNICK(Client &client,  const std::string &targetNick) {
+    std::stringstream ss;
+    
+    ss << ":" << client.getNickName() << " 401 " << client.getNickName()  << " " << targetNick << " :No such nick/channel\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }

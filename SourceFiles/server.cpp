@@ -123,7 +123,7 @@ bool Server::processPassCommand(Client &client, const std::string &message) {
             pass.erase(pass.length() - 1);
 
         if (pass != password) {
-            // client.sendReply(464, client); // we will not use this because pass is the first thing we check so we don't have enought data 
+            client.sendReply(464, client); // we will not use this because pass is the first thing we check so we don't have enought data 
             LOG_SERVER("Invalid password");
             client.clearBuffer();
             return false;
@@ -158,7 +158,8 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
         removeCarriageReturn(newNick);
         if (isNickTaken(newNick)) {
             LOG_SERVER("Error: Nickname already taken.");
-            client.sendReply(443, client);
+            if (client.isAuthenticated())
+                client.ERR_NICKNAMEINUSE(client, newNick);
             return false;
         }
 
@@ -239,6 +240,7 @@ void Server::updateNickUser(Client &client) {
         if (processNickCommand(client, message)) {
             messages.erase(messages.begin() + i);
             client.sendReply(001, client);
+            // may add nick name updated reply 
             continue;
         } else if (processUserCommand(client, message)) {
             messages.erase(messages.begin() + i);
@@ -278,50 +280,55 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
         return false;
 
     std::istringstream ss(message.substr(8));
-    std::string targetNick, messageText;
-    ss >> targetNick;
+    std::string targetList, messageText;
+    ss >> targetList;
     getline(ss, messageText);
 
     if (!messageText.empty() && messageText[0] == ' ')
         messageText = messageText.substr(1);
 
-    Client *targetClient = getClientByNick(targetNick);
-    if (!targetClient) {
-        LOG_SERVER("Error: No such nickname found: " + targetNick);
-        // sender.sendReply(401, sender);  // ERR_NOSUCHNICK 
-        return false;
-    }
+    std::stringstream targetStream(targetList);
+    std::string targetNick;
+    while (std::getline(targetStream, targetNick, ',')) {
+        Client *targetClient = getClientByNick(targetNick);
+        if (!targetClient) {
+            sender.ERR_NOSUCHNICK(sender, targetNick);// 401
+            continue;
+        }
 
-    removeCarriageReturn(messageText);
-    std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + targetNick + " " + messageText + "\r\n";
-    int sendResult = send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
-    if (sendResult == -1) {
-        LOG_SERVER("Error sending message to " + targetNick);
-        return false;
+        removeCarriageReturn(messageText);
+        std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + targetNick + " :" + messageText + "\r\n";
+        send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
     }
 
     LOG_SERVER("Message sent successfully to " + targetNick);
     return true;
 }
 
+bool hasNewline(const std::string& message) {
+    return message.find("\n") != std::string::npos;
+}
+
 void Server::handleClientMessage(Client &client, const std::string &message) {
     client.appendToBuffer(message);
-    LOG_CLIENT(client.getSocket(), message);
-    if (message.find("CAP LS 302") != std::string::npos)
-        sendCapResponse(client.getSocket());
-    else if (message.find("PING") == 0)
-       ping(message, client.getSocket());
-    else {
-        if (setUpClient(client)) {
-            sendHellGate(client.getSocket());
-            LOG_SERVER("Client setup completed successfully for " << client.getNickName());
-        } else {
-            updateNickUser(client);
-            if (processPrivMsgCommand(client, message))
-                LOG_INFO("message sent");
+    if (hasNewline(message)) {
+        LOG_CLIENT(client.getSocket(), message);
+        if (message.find("CAP LS 302") != std::string::npos)
+            sendCapResponse(client.getSocket());
+        else if (message.find("PING") == 0)
+        ping(message, client.getSocket());
+        else {
+            if (setUpClient(client)) {
+                sendHellGate(client.getSocket());
+                LOG_SERVER("Client setup completed successfully for " << client.getNickName());
+            } else {
+                updateNickUser(client);
+                if (processPrivMsgCommand(client, message))
+                    LOG_INFO("message sent");
+            }
+            client.clearBuffer();
         }
-        client.clearBuffer();
-    }
+    } 
 }
 
 void Server::processClienstMessage(fd_set readfds) {

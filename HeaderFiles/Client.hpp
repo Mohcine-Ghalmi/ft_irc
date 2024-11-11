@@ -75,4 +75,6 @@ class Client{
 
         void    clearBuffer();
         void sendReply(int replyNumber, Client &client);
+        void ERR_NICKNAMEINUSE(Client &client, const std::string &newNick);
+        void ERR_NOSUCHNICK(Client &client, const std::string &targetNick);
 };

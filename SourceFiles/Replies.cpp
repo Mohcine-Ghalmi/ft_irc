@@ -66,12 +66,6 @@ std::string Replies::RPL_ISUPPORT(const std::string& serverName) {
     return response.str();
 }
 
-std::string Replies::ERR_NICKNAMEINUSE(const std::string &serverName, const std::string &nickname) {
-    std::stringstream ss;
-
-    ss << ":" << serverName << " 433 " << nickname << " :Nickname is already in use\r\n";
-    return ss.str();
-}
 
 std::string Replies::ERR_PASSWDMISMATCH(const std::string &clientNick) {
     std::stringstream ss;
