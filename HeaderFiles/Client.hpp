@@ -77,4 +77,6 @@ class Client{
         void sendReply(int replyNumber, Client &client);
         void ERR_NICKNAMEINUSE(Client &client, const std::string &newNick);
         void ERR_NOSUCHNICK(Client &client, const std::string &targetNick);
+        void ERR_ERRONEUSNICKNAME(Client &client, const std::string &invalidNick);
+        void ERR_NEEDMOREPARAMS(Client &client, std::string cmd);
 };

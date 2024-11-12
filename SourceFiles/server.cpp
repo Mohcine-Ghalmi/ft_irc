@@ -113,7 +113,7 @@ bool Server::processPassCommand(Client &client, const std::string &message) {
     if (message.find("PASS") == 0 && client.getPassword().empty()) {
         if (message.length() <= 5) {
             LOG_SERVER("Error: PASS command provided without a value.");
-            // client.sendReply(462, client);
+            client.ERR_NEEDMOREPARAMS(client, "PASS");
             return true;
         }
 
@@ -147,15 +147,37 @@ void removeCarriageReturn(std::string &str) {
     str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
 }
 
+bool isValidNick(const std::string &nickname) {
+    if (nickname.empty() || nickname[0] == '$' || nickname[0] == ':')
+        return false;
+
+    for (size_t i = 0; i < nickname.length(); i++)
+        if (nickname[i] == ' ' || nickname[i] == ',' || nickname[i] == '*' || nickname[i] == '?' || nickname[i] == '!' || nickname[i] == '@')
+            return false;
+
+    if (nickname.find('.') != std::string::npos)
+        return false;
+
+    return true;
+}
+
 bool Server::processNickCommand(Client &client, const std::string &message) {
     if (message.find("NICK") == 0) {
         if (message.length() <= 5) {
             LOG_SERVER("Error: NICK command provided without a value.");
+            client.ERR_NEEDMOREPARAMS(client, "NICK");
             return true;
         }
 
         std::string newNick = message.substr(5);
         removeCarriageReturn(newNick);
+
+        if (!isValidNick(newNick)) {
+            LOG_SERVER("Error: Invalid nickname.");
+            client.ERR_ERRONEUSNICKNAME(client, newNick);
+            return false;
+        }
+
         if (isNickTaken(newNick)) {
             LOG_SERVER("Error: Nickname already taken.");
             if (client.isAuthenticated())
@@ -309,6 +331,21 @@ bool hasNewline(const std::string& message) {
     return message.find("\n") != std::string::npos;
 }
 
+bool Server::processJoinCommand(Client &client, const std::string &message) {
+    if (message.find("JOIN") == 0) {
+        std::string channelName = message.substr(5);
+        if (channelName.empty()) {
+            client.sendReply(461, client);
+            return false;
+        }
+        // if (joinChannel(client, channelName)) {
+        //     client.sendReply(331, client);
+        // }
+        return true;
+    }
+    return false;
+}
+
 void Server::handleClientMessage(Client &client, const std::string &message) {
     client.appendToBuffer(message);
     if (hasNewline(message)) {
@@ -321,7 +358,7 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
             if (setUpClient(client)) {
                 sendHellGate(client.getSocket());
                 LOG_SERVER("Client setup completed successfully for " << client.getNickName());
-            } else {
+            } else if (client.isAuthenticated()) {
                 updateNickUser(client);
                 if (processPrivMsgCommand(client, message))
                     LOG_INFO("message sent");

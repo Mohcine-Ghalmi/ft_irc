@@ -41,8 +41,8 @@ void Client::sendReply(int replyNumber, Client &client) {
         case 005:
             message = replies.RPL_ISUPPORT(client.getHostname());
             break;
-        case 462:
-            message = replies.ERR_NEEDMOREPARAMS(client.getSocket());
+        case 464:
+            message = replies.ERR_PASSWDMISMATCH(client.getNickName());
             break;
         default:
             break;
@@ -61,5 +61,19 @@ void Client::ERR_NOSUCHNICK(Client &client,  const std::string &targetNick) {
     std::stringstream ss;
     
     ss << ":" << client.getNickName() << " 401 " << client.getNickName()  << " " << targetNick << " :No such nick/channel\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::ERR_ERRONEUSNICKNAME(Client &client, const std::string &invalidNick) {
+    std::stringstream ss;
+
+    ss <<  ":" << client.getHostname() << " 432 " << client.getNickName() << " " << invalidNick << " :Erroneous nickname\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::ERR_NEEDMOREPARAMS(Client &client, std::string cmd) {
+    std::stringstream ss;
+
+    ss <<  ":" << client.getHostname() << " 461 " << client.getNickName() << " " << cmd << " :Not enough parameters\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }

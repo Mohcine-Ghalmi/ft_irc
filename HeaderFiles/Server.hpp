@@ -35,5 +35,6 @@ class Server {
         void updateNickUser(Client &client);
         bool isNickTaken(std::string &nick);
         bool processPrivMsgCommand(Client &sender, const std::string &message);
+        bool processJoinCommand(Client &client, const std::string &message);
 };
 

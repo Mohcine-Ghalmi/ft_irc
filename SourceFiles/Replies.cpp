@@ -2,12 +2,6 @@
 #include <sstream>
 #include <iostream>
 
-std::string Replies::ERR_NEEDMOREPARAMS(int clientSocket) {
-    std::stringstream ss;
-    ss << clientSocket;
-    return ss.str() + " PASS :Not enough parameters\r\n";
-}
-
 std::string Replies::RPL_WELCOME(std::string nickName, std::string userName) {
     std::stringstream ss;
     ss << ":localhost 001 " << nickName << " :Welcome to the Hell! Network, " << nickName
