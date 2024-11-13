@@ -2,6 +2,12 @@
 #include <typeinfo>
 #include <sstream>
 
+bool Server::proccessCommandHelper(std::string cmd, std::string dif) {
+    int pos = cmd.find(" ");
+    if (pos <= 0) return false;
+    return cmd.substr(0, pos) == dif;
+}
+
 void Server::checkArgs(int argc, char **argv) {
     if (argc != 3) {
         LOG_ERROR(RED "Invalid number of arguments. Usage: ./server <port> <password>");

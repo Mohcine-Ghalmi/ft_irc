@@ -43,5 +43,8 @@ class Server {
         Channel* createChannel(const std::string &channelName);
         bool joinChannel(Client &client, const std::string &channelName); // JOIN
         bool leaveChannel(Client &client, const std::string &channelName); // PART
+
+        // helpers
+        bool proccessCommandHelper(std::string cmd, std::string dif);
 };
 
