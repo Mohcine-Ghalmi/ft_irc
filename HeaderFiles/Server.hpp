@@ -7,7 +7,7 @@
 #include <iostream>
 #include "Replies.hpp"
 #include "../HeaderFiles/Channel.hpp"
-
+class Channel;
 class Server {
     private:
         std::string port;

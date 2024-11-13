@@ -9,9 +9,9 @@ YELLOW	= \e[93;5;226m
 GRAY	= \e[33;2;37m
 RESET	= \e[0m
 
-SRC = main.cpp SourceFiles/server.cpp SourceFiles/client.cpp SourceFiles/Replies.cpp
+SRC = main.cpp SourceFiles/server.cpp SourceFiles/client.cpp SourceFiles/Replies.cpp SourceFiles/Channel.cpp
 
-HDR = HeaderFiles/Server.hpp HeaderFiles/Client.hpp HeaderFiles/Replies.hpp
+HDR = HeaderFiles/Server.hpp HeaderFiles/Client.hpp HeaderFiles/Replies.hpp HeaderFiles/Channel.hpp
 
 .PHONY: all clean re
 

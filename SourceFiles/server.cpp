@@ -359,7 +359,10 @@ Channel* Server::createChannel(const std::string &channelName) {
     std::map<std::string, Channel>::iterator it = channels.find(channelName);
     if (it == channels.end()) {
         // Create the channel if it doesn't exist
+        // find 
+        // create 
         channels[channelName] = Channel(channelName);
+        std::cout << "Just a test";
     }
     return &channels[channelName];
 }

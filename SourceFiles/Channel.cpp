@@ -28,3 +28,15 @@ void Channel::setKeyProtection(bool value, const std::string &keyVal) {
 }
 
 void Channel::setUserLimit(int limit) { userLimit = limit; }
+
+Channel::Channel() : name(""), topic(""), inviteOnly(false) \
+                                                , topicRestriction(false), keyProtected(false), userLimit(0) {}
+
+Channel::Channel(const Channel &org)  {
+    this->name = org.name;
+    this->topic = org.topic;
+    this->inviteOnly = org.inviteOnly;
+    this->topicRestriction = org.topicRestriction;
+    this->keyProtected = org.keyProtected;
+    this->userLimit = org.userLimit;
+}

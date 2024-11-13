@@ -19,6 +19,9 @@ class Channel {
 
    public:
         Channel(const std::string &channelName);
+        Channel();
+        Channel(const Channel &org);
+        
 
         // Basic getter/setter functions
         const std::string& getName() const;
