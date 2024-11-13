@@ -152,6 +152,7 @@ bool Server::isNickTaken(std::string &nick) {
 
 void removeCarriageReturn(std::string &str) {
     str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
+    str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
 }
 
 bool isValidNick(const std::string &nickname) {
@@ -306,8 +307,31 @@ Client* Server::getClientByNick(const std::string &targetNick) {
     return NULL;
 }
 
+void Server::sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText) {
+    // Find the channel by name
+    Channel* channel = getChannel(channelName);
+    if (!channel) {
+        LOG_SERVER("channel doesn't exist");
+        // sender.sendReply(ERR_NOSUCHCHANNEL, channelName + " :No such channel");
+        return;
+    }
+
+    if (!channel->isMember(&sender)) {
+        LOG_SERVER("client is not in teh channel");
+        // sender.sendReply(ERR_CANNOTSENDTOCHAN, channelName + " :Cannot send to channel");
+        return;
+    }
+    std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + channelName + " :" + messageText + "\r\n";
+
+    for (std::set<Client*>::iterator it = channel->getMembers().begin(); it != channel->getMembers().end(); ++it) {
+        Client* targetClient = *it;
+        if (targetClient != &sender)
+            send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
+    }
+}
+
+
 bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
-    // if (message.find("PRIVMSG") != 0)
     if (!this->proccessCommandHelper(message, "PRIVMSG")) 
         return false;
 
@@ -322,20 +346,26 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     std::stringstream targetStream(targetList);
     std::string targetNick;
     while (std::getline(targetStream, targetNick, ',')) {
-        Client *targetClient = getClientByNick(targetNick);
-        if (!targetClient) {
-            sender.ERR_NOSUCHNICK(sender, targetNick);// 401
-            continue;
-        }
-
         removeCarriageReturn(messageText);
-        std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + targetNick + " :" + messageText + "\r\n";
-        send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
+        if (targetNick[0] == '#') {
+            Channel *targetChannel = getChannel(targetNick);
+            if (targetChannel)
+                sendMessageToChannel(sender, targetNick, messageText);  // Sends to all members of the channel
+        } 
+        else {
+            Client *targetClient = getClientByNick(targetNick);
+            if (targetClient) {
+                std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + targetNick + " :" + messageText + "\r\n";
+                send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
+            } else 
+                sender.ERR_NOSUCHNICK(sender, targetNick);
+        }
     }
 
-    LOG_SERVER("Message sent successfully to " + targetNick);
+    LOG_SERVER("Message sent successfully to " + targetList);
     return true;
 }
+
 
 bool hasNewline(const std::string& message) {
     return message.find("\n") != std::string::npos;
@@ -375,6 +405,14 @@ Channel* Server::createChannel(const std::string &channelName) {
 }
 
 Channel* Server::getChannel(const std::string &channelName) {
+    std::map<std::string, Channel>::iterator itStart = channels.begin();
+    std::map<std::string, Channel>::iterator itEnd = channels.end();
+
+    while (itStart != itEnd) {
+        std::cout << itStart->first.length() << std::endl;
+        itStart++;
+    }
+    
     std::map<std::string, Channel>::iterator it = channels.find(channelName);
     if (it != channels.end())
         return &it->second;
@@ -401,6 +439,7 @@ bool Server::processJoinCommand(Client &client, const std::string &message) {
             return false;
         }
 
+        removeCarriageReturn(channelName);
         if (joinChannel(client, channelName))
             //client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome
         return true;
