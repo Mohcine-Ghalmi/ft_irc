@@ -331,21 +331,6 @@ bool hasNewline(const std::string& message) {
     return message.find("\n") != std::string::npos;
 }
 
-bool Server::processJoinCommand(Client &client, const std::string &message) {
-    if (message.find("JOIN") == 0) {
-        std::string channelName = message.substr(5);
-        if (channelName.empty()) {
-            client.sendReply(461, client);
-            return false;
-        }
-        // if (joinChannel(client, channelName)) {
-        //     client.sendReply(331, client);
-        // }
-        return true;
-    }
-    return false;
-}
-
 void Server::handleClientMessage(Client &client, const std::string &message) {
     client.appendToBuffer(message);
     if (hasNewline(message)) {
@@ -362,11 +347,31 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 updateNickUser(client);
                 if (processPrivMsgCommand(client, message))
                     LOG_INFO("message sent");
+                // for channels
             }
             client.clearBuffer();
         }
     } 
 }
+
+//cmnt this code will work tadaaa magic 
+Channel* Server::createChannel(const std::string &channelName) {
+    std::map<std::string, Channel>::iterator it = channels.find(channelName);
+    if (it == channels.end()) {
+        // Create the channel if it doesn't exist
+        channels[channelName] = Channel(channelName);
+    }
+    return &channels[channelName];
+}
+
+Channel* Server::getChannel(const std::string &channelName) {
+    std::map<std::string, Channel>::iterator it = channels.find(channelName);
+    if (it != channels.end()) {
+        return &it->second;
+    }
+    return NULL;
+}
+
 
 void Server::processClienstMessage(fd_set readfds) {
     char buffer[BUFFER_SIZE];

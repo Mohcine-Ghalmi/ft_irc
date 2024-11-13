@@ -6,6 +6,7 @@
 #include "Client.hpp"
 #include <iostream>
 #include "Replies.hpp"
+#include "../HeaderFiles/Channel.hpp"
 
 class Server {
     private:
@@ -13,6 +14,7 @@ class Server {
         int serverSocket;
         std::string password;
         std::vector<Client> clients;  // Store clients connected to the server
+        std::map<std::string, Channel> channels;
     public:
         Server(int argc, char **argv);
         void start();
@@ -36,5 +38,10 @@ class Server {
         bool isNickTaken(std::string &nick);
         bool processPrivMsgCommand(Client &sender, const std::string &message);
         bool processJoinCommand(Client &client, const std::string &message);
+
+        Channel* createChannel(const std::string &channelName);
+        Channel* getChannel(const std::string &channelName);
+        bool joinChannel(Client &client, const std::string &channelName); // JOIN
+        bool leaveChannel(Client &client, const std::string &channelName); // PART
 };
 
