@@ -347,7 +347,7 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 updateNickUser(client);
                 if (processPrivMsgCommand(client, message))
                     LOG_INFO("message sent");
-                // for channels
+                processJoinCommand(client, message);
             }
             client.clearBuffer();
         }
@@ -357,24 +357,44 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
 //cmnt this code will work tadaaa magic 
 Channel* Server::createChannel(const std::string &channelName) {
     std::map<std::string, Channel>::iterator it = channels.find(channelName);
-    if (it == channels.end()) {
-        // Create the channel if it doesn't exist
-        // find 
-        // create 
+    // Create the channel if it doesn't exist
+    if (it == channels.end())
         channels[channelName] = Channel(channelName);
-        std::cout << "Just a test";
-    }
     return &channels[channelName];
 }
 
 Channel* Server::getChannel(const std::string &channelName) {
     std::map<std::string, Channel>::iterator it = channels.find(channelName);
-    if (it != channels.end()) {
+    if (it != channels.end())
         return &it->second;
-    }
     return NULL;
 }
 
+bool Server::joinChannel(Client &client, const std::string &channelName) {
+    Channel* channel = createChannel(channelName);  // Create channel if it doesn't exist
+    if (channel) {
+        channel->addMember(&client);
+        //client.sendReply(331, client);  // Send a welcome message or similar notification
+        LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
+        return true;
+    }
+    return false;
+}
+
+bool Server::processJoinCommand(Client &client, const std::string &message) {
+    if (message.find("JOIN") == 0) {
+        std::string channelName = message.substr(5);  // Assuming "JOIN #channel" format
+        if (channelName.empty()) {
+            client.ERR_NEEDMOREPARAMS(client, "JOIN");  // Send ERR_NEEDMOREPARAMS if no channel specified
+            return false;
+        }
+
+        if (joinChannel(client, channelName))
+            //client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome
+        return true;
+    }
+    return false;
+}
 
 void Server::processClienstMessage(fd_set readfds) {
     char buffer[BUFFER_SIZE];

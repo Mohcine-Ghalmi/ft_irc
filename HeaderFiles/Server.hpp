@@ -39,8 +39,8 @@ class Server {
         bool processPrivMsgCommand(Client &sender, const std::string &message);
         bool processJoinCommand(Client &client, const std::string &message);
 
-        Channel* createChannel(const std::string &channelName);
         Channel* getChannel(const std::string &channelName);
+        Channel* createChannel(const std::string &channelName);
         bool joinChannel(Client &client, const std::string &channelName); // JOIN
         bool leaveChannel(Client &client, const std::string &channelName); // PART
 };
