@@ -4,7 +4,7 @@
 
 bool Server::proccessCommandHelper(std::string cmd, std::string dif) {
     int pos = cmd.find(" ");
-    if (pos <= 0) return false;
+    if (pos == std::string::npos) return false;
     return cmd.substr(0, pos) == dif;
 }
 
@@ -347,8 +347,8 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
         LOG_CLIENT(client.getSocket(), message);
         if (message.find("CAP LS 302") != std::string::npos)
             sendCapResponse(client.getSocket());
-        // else if (message.find("PING") == 0)
-        else if (this->proccessCommandHelper(message, "PING"))
+        else if (message.find("PING") == 0)
+        // else if ("PING\r\n" == message)
             ping(message, client.getSocket());
         else {
             if (setUpClient(client)) {
