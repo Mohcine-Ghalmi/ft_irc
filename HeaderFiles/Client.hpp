@@ -55,6 +55,7 @@ class Client{
     public:
 
         Client(int socket);
+        Client(const Client &client);
         ~Client();
        
         int getSocket();

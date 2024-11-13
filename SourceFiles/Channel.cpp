@@ -15,10 +15,14 @@ bool Channel::isOperator(Client* client) const { return operators.find(client) !
 void Channel::setTopic(const std::string &newTopic) { topic = newTopic; }
 void Channel::addOperator(Client* client) { operators.insert(client); }
 void Channel::removeOperator(Client* client) { operators.erase(client); }
-void Channel::addMember(Client* client) { members.insert(client); }
-void Channel::removeMember(Client* client) { members.erase(client); }
-bool Channel::isMember(Client* client) const { return members.find(client) != members.end(); }
-const std::set<Client*>& Channel::getMembers() const { return members; }
+void Channel::addMember(Client* client) {
+    members.insert(std::pair<std::string, Client>(client->getNickName(), *client)); 
+}
+void Channel::removeMember(Client* client) { 
+    members.erase(client->getNickName());
+}
+bool Channel::isMember(Client* client) const { return members.find(client->getNickName()) != members.end(); }
+std::map<std::string, Client>& Channel::getMembers()  { return members; }
 
 void Channel::setInviteOnly(bool value) { inviteOnly = value; }
 void Channel::setTopicRestriction(bool value) { topicRestriction = value; }

@@ -12,3 +12,6 @@
 [ ]. update nick name message {You're now known as newNick}
 [ ]. add at logging {Mode change [+Ziw] for user}
 [ ]. send/recv message from and to channel
+
+/connect localhost 42000 0001 evblood saad
+/join #test

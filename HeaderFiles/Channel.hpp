@@ -9,7 +9,8 @@ class Channel {
     private:
         std::string name;
         std::string topic;
-        std::set<Client*> members;       // A set of pointers to clients in this channel
+        // std::set<Client *> members;       // A set of pointers to clients in this channel
+        std::map<std::string, Client> members;       // A set of pointers to clients in this channel
         std::set<Client*> operators;     // Channel operators
         bool inviteOnly;                 // i mode
         bool topicRestriction;           // t mode
@@ -39,7 +40,7 @@ class Channel {
         void addMember(Client* client);
         void removeMember(Client* client);
         bool isMember(Client* client) const;
-        const std::set<Client*>& getMembers() const;
+        std::map<std::string, Client>& getMembers();
 
         void setInviteOnly(bool value);
         void setTopicRestriction(bool value);

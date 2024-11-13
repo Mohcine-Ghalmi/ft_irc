@@ -2,6 +2,9 @@
 #include <sstream>
 
 Client::Client(int socket) : clientSocket(socket),  authenticated(false), password("") {}
+
+Client::Client(const Client &client) : clientSocket(client.clientSocket), nickName(client.nickName), userName(client.userName), hostName(client.hostName), realName(client.realName), authenticated(client.authenticated), buffer(client.buffer), password(client.password), replies(client.replies) { }
+
 Client::~Client() { /**close(clientSocket);**/}
 void Client::clearBuffer() { buffer.clear();}
 

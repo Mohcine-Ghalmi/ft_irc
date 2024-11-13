@@ -322,11 +322,11 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
         return;
     }
     std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + channelName + " :" + messageText + "\r\n";
-
-    for (std::set<Client*>::iterator it = channel->getMembers().begin(); it != channel->getMembers().end(); ++it) {
-        Client* targetClient = *it;
-        if (targetClient != &sender)
-            send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
+    for (std::map<std::string, Client>::iterator it =  channel->getMembers().begin(); it != channel->getMembers().end(); it++) {
+        Client& targetClient = it->second;
+        std::cout << targetClient.getNickName() << std::endl;
+        if (targetClient.getNickName() != sender.getNickName())
+            send(targetClient.getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
     }
 }
 
@@ -378,7 +378,6 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
         if (message.find("CAP LS 302") != std::string::npos)
             sendCapResponse(client.getSocket());
         else if (message.find("PING") == 0)
-        // else if ("PING\r\n" == message)
             ping(message, client.getSocket());
         else {
             if (setUpClient(client)) {
@@ -386,9 +385,12 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 LOG_SERVER("Client setup completed successfully for " << client.getNickName());
             } else if (client.isAuthenticated()) {
                 updateNickUser(client);
-                if (processPrivMsgCommand(client, message))
-                    LOG_INFO("message sent");
-                processJoinCommand(client, message);
+                if (processPrivMsgCommand(client, message)) {
+                    LOG_INFO("message sent");}
+                else if (processJoinCommand(client, message)) {
+                    LOG_INFO("Joining done");
+                }
+                
             }
             client.clearBuffer();
         }
@@ -454,18 +456,19 @@ void Server::processClienstMessage(fd_set readfds) {
         memset(buffer, 0, BUFFER_SIZE);
         if (FD_ISSET(it->getSocket(), &readfds)) {
             ssize_t bytesReceived = recv(it->getSocket(), buffer, BUFFER_SIZE, 0);
-
             if (bytesReceived <= 0) {
                 if (bytesReceived == 0) {LOG_INFO(RED "Client disconnected ");}
                 else
                     perror("recv error");
                 close(it->getSocket());
-                it = clients.erase(it);
+                clients.erase(it);
+                it = clients.begin();
                 continue;
             } else {
                 std::string clientMessage(buffer);
                 handleClientMessage(*it, clientMessage);
                 if (it->getPassword() != password && !it->getPassword().empty()) {
+                    std::cout << "ina lilah awdi a7mad" << std::endl;
                     close(it->getSocket());
                     it = clients.erase(it);
                     LOG_INFO(RED "client out");
