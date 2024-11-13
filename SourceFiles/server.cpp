@@ -116,7 +116,8 @@ std::vector<std::string> splitMessages(const std::string &buffer) {
 }
 
 bool Server::processPassCommand(Client &client, const std::string &message) {
-    if (message.find("PASS") == 0 && client.getPassword().empty()) {
+    // if (message.find("PASS") == 0 && client.getPassword().empty()) {
+    if (this->proccessCommandHelper(message, "PASS") && client.getPassword().empty()) {
         if (message.length() <= 5) {
             LOG_SERVER("Error: PASS command provided without a value.");
             client.ERR_NEEDMOREPARAMS(client, "PASS");
@@ -168,7 +169,8 @@ bool isValidNick(const std::string &nickname) {
 }
 
 bool Server::processNickCommand(Client &client, const std::string &message) {
-    if (message.find("NICK") == 0) {
+    // if (message.find("NICK") == 0) {
+    if (this->proccessCommandHelper(message, "NICK")) {
         if (message.length() <= 5) {
             LOG_SERVER("Error: NICK command provided without a value.");
             client.ERR_NEEDMOREPARAMS(client, "NICK");
@@ -199,7 +201,8 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
 }
 // FOR irssi /quote USER myusername myhostname localhost :MyCustomRealName
 bool Server::processUserCommand(Client &client, const std::string &message) {
-    if (message.find("USER") == 0) {
+    // if (message.find("USER") == 0) {
+    if (this->proccessCommandHelper(message, "USER")) {
         std::stringstream ss(message.substr(5));
         std::string username, hostname, realname;
         
@@ -304,7 +307,8 @@ Client* Server::getClientByNick(const std::string &targetNick) {
 }
 
 bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
-    if (message.find("PRIVMSG") != 0)
+    // if (message.find("PRIVMSG") != 0)
+    if (!this->proccessCommandHelper(message, "PRIVMSG")) 
         return false;
 
     std::istringstream ss(message.substr(8));
@@ -343,8 +347,9 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
         LOG_CLIENT(client.getSocket(), message);
         if (message.find("CAP LS 302") != std::string::npos)
             sendCapResponse(client.getSocket());
-        else if (message.find("PING") == 0)
-        ping(message, client.getSocket());
+        // else if (message.find("PING") == 0)
+        else if (this->proccessCommandHelper(message, "PING"))
+            ping(message, client.getSocket());
         else {
             if (setUpClient(client)) {
                 sendHellGate(client.getSocket());
@@ -388,7 +393,8 @@ bool Server::joinChannel(Client &client, const std::string &channelName) {
 }
 
 bool Server::processJoinCommand(Client &client, const std::string &message) {
-    if (message.find("JOIN") == 0) {
+    // if (message.find("JOIN") == 0) {
+    if (this->proccessCommandHelper(message, "JOIN")) {
         std::string channelName = message.substr(5);  // Assuming "JOIN #channel" format
         if (channelName.empty()) {
             client.ERR_NEEDMOREPARAMS(client, "JOIN");  // Send ERR_NEEDMOREPARAMS if no channel specified

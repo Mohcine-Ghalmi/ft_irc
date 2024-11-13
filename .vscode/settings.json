@@ -71,5 +71,6 @@
         "mutex": "cpp",
         "optional": "cpp",
         "ratio": "cpp",
+        "set": "cpp"
     }
 }
