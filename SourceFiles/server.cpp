@@ -3,7 +3,7 @@
 #include <sstream>
 
 bool Server::proccessCommandHelper(std::string cmd, std::string dif) {
-    int pos = cmd.find(" ");
+    unsigned long pos = cmd.find(" ");
     if (pos == std::string::npos) return false;
     return cmd.substr(0, pos) == dif;
 }
