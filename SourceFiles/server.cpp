@@ -399,10 +399,19 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
 
 //cmnt this code will work tadaaa magic 
 Channel* Server::createChannel(const std::string &channelName) {
-    std::map<std::string, Channel>::iterator it = channels.find(channelName);
+    std::string realName; // this real name must be checked for the ',' so you get the names
+    unsigned long pos = channelName.find(" ");
+    if (pos == std::string::npos) realName = channelName;
+    else realName = channelName.substr(0, pos);
+    std::map<std::string, Channel>::iterator it = channels.find(realName);
     // Create the channel if it doesn't exist
-    if (it == channels.end())
-        channels[channelName] = Channel(channelName);
+    if (it == channels.end()){
+        //creating the channel with it's name
+        channels[channelName] = Channel(realName); // this should be after checking it it's a private or protected chat..
+        // check options
+        // meanwhile check the next part does it exists to get the key for protected channels.
+    }
+    if (pos != std::string::npos) return NULL; // TODO; this is should be an error cause the channel is already joind and the user is trying to set options : Know that this can make the code Crush
     return &channels[channelName];
 }
 
@@ -421,10 +430,12 @@ Channel* Server::getChannel(const std::string &channelName) {
     return NULL;
 }
 
-bool Server::joinChannel(Client &client, const std::string &channelName) {
+bool Server::joinChannel(Client &client, const std::string &channelName) { // this should check the channel mode
     Channel* channel = createChannel(channelName);  // Create channel if it doesn't exist
     if (channel) {
         channel->addMember(&client);
+        if (channel->getMembers().size() == 1) // if the channel doesn't exists the first user joined it must be the operator
+            channel->addOperator(&client);
         //client.sendReply(331, client);  // Send a welcome message or similar notification
         LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
         return true;
@@ -442,9 +453,11 @@ bool Server::processJoinCommand(Client &client, const std::string &message) {
         }
 
         removeCarriageReturn(channelName);
-        if (joinChannel(client, channelName))
-            //client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome
-        return true;
+        std::cout << "at this point => " << channelName << std::endl;
+        if (joinChannel(client, channelName)){
+            client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome
+            return true;
+        }
     }
     return false;
 }
@@ -468,7 +481,6 @@ void Server::processClienstMessage(fd_set readfds) {
                 std::string clientMessage(buffer);
                 handleClientMessage(*it, clientMessage);
                 if (it->getPassword() != password && !it->getPassword().empty()) {
-                    std::cout << "ina lilah awdi a7mad" << std::endl;
                     close(it->getSocket());
                     it = clients.erase(it);
                     LOG_INFO(RED "client out");

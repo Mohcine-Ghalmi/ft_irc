@@ -11,7 +11,7 @@ class Channel {
         std::string topic;
         // std::set<Client *> members;       // A set of pointers to clients in this channel
         std::map<std::string, Client> members;       // A set of pointers to clients in this channel
-        std::set<Client*> operators;     // Channel operators
+        std::map<std::string, Client> operators;     // Channel operators
         bool inviteOnly;                 // i mode
         bool topicRestriction;           // t mode
         bool keyProtected;               // k mode
