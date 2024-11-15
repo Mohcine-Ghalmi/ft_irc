@@ -420,7 +420,7 @@ Channel* Server::getChannel(const std::string &channelName) {
     std::map<std::string, Channel>::iterator itEnd = channels.end();
 
     while (itStart != itEnd) {
-        std::cout << itStart->first.length() << std::endl;
+        // std::cout << itStart->first.length() << std::endl;
         itStart++;
     }
     
@@ -444,7 +444,6 @@ bool Server::joinChannel(Client &client, const std::string &channelName) { // th
 }
 
 bool Server::processJoinCommand(Client &client, const std::string &message) {
-    // if (message.find("JOIN") == 0) {
     if (this->proccessCommandHelper(message, "JOIN")) {
         std::string channelName = message.substr(5);  // Assuming "JOIN #channel" format
         if (channelName.empty()) {
@@ -453,7 +452,6 @@ bool Server::processJoinCommand(Client &client, const std::string &message) {
         }
 
         removeCarriageReturn(channelName);
-        std::cout << "at this point => " << channelName << std::endl;
         if (joinChannel(client, channelName)){
             client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome
             return true;
