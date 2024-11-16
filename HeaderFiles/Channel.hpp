@@ -9,7 +9,6 @@ class Channel {
     private:
         std::string name;
         std::string topic;
-        // std::set<Client *> members;       // A set of pointers to clients in this channel
         std::map<std::string, Client> members;       // A set of pointers to clients in this channel
         std::map<std::string, Client> operators;     // Channel operators
         bool inviteOnly;                 // i mode

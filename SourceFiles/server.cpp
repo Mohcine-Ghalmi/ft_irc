@@ -116,7 +116,6 @@ std::vector<std::string> splitMessages(const std::string &buffer) {
 }
 
 bool Server::processPassCommand(Client &client, const std::string &message) {
-    // if (message.find("PASS") == 0 && client.getPassword().empty()) {
     if (this->proccessCommandHelper(message, "PASS") && client.getPassword().empty()) {
         if (message.length() <= 5) {
             LOG_SERVER("Error: PASS command provided without a value.");
@@ -170,7 +169,6 @@ bool isValidNick(const std::string &nickname) {
 }
 
 bool Server::processNickCommand(Client &client, const std::string &message) {
-    // if (message.find("NICK") == 0) {
     if (this->proccessCommandHelper(message, "NICK")) {
         if (message.length() <= 5) {
             LOG_SERVER("Error: NICK command provided without a value.");
@@ -202,7 +200,6 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
 }
 // FOR irssi /quote USER myusername myhostname localhost :MyCustomRealName
 bool Server::processUserCommand(Client &client, const std::string &message) {
-    // if (message.find("USER") == 0) {
     if (this->proccessCommandHelper(message, "USER")) {
         std::stringstream ss(message.substr(5));
         std::string username, hostname, realname;
@@ -345,14 +342,13 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
 
     std::stringstream targetStream(targetList);
     std::string targetNick;
+    removeCarriageReturn(messageText);
     while (std::getline(targetStream, targetNick, ',')) {
-        removeCarriageReturn(messageText);
         if (targetNick[0] == '#') {
             Channel *targetChannel = getChannel(targetNick);
             if (targetChannel)
                 sendMessageToChannel(sender, targetNick, messageText);  // Sends to all members of the channel
-        } 
-        else {
+        } else {
             Client *targetClient = getClientByNick(targetNick);
             if (targetClient) {
                 std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + targetNick + " :" + messageText + "\r\n";
@@ -419,10 +415,8 @@ Channel* Server::getChannel(const std::string &channelName) {
     std::map<std::string, Channel>::iterator itStart = channels.begin();
     std::map<std::string, Channel>::iterator itEnd = channels.end();
 
-    while (itStart != itEnd) {
-        // std::cout << itStart->first.length() << std::endl;
+    while (itStart != itEnd)
         itStart++;
-    }
     
     std::map<std::string, Channel>::iterator it = channels.find(channelName);
     if (it != channels.end())
@@ -519,126 +513,3 @@ void Server::start() {
     }
 }
 
-
-// int Server::process_client_message(int clientfd)
-// {
-//     std::array<char, READ_BUFFER_SIZE> buffer;
-//     ssize_t ret = recv(clientfd, buffer.data(), buffer.size(), 0);
-//     if (ret <= 0){
-//         //                         if (ret == 0) { 
-//         //     LOG_INFO("Client closed connection");  // Graceful close
-//         // } else {
-//         //     LOG_ERROR("Error occu on socket: " << strerror(errno)); 
-//         // }
-//         LOG_ERROR("To remove client");
-//         FD_CLR(clientfd, &(this->all_objs));
-//         close(clientfd);
-//     }
-//     std::string tmp;
-//     tmp.reserve(ret);
-//     for (ssize_t s = 0; s < ret; s++) {
-//     tmp.push_back(buffer.data()[s]);
-//     }
-//     LOG_INFO("This content is: " << tmp << "the size is: " << ret);
-//     std::pair<bool, std::string> result = this->clients[clientfd]->setBuffer(tmp); // check if I recieved the \r\n : 
-//     if (result.first) // message is finished!
-//     {
-//         // handel message by client -> 
-//         std::vector<std::string> CommandParsed = tools.CommandParser(result.second);
-//         for (size_t i = 0; i < CommandParsed[0].size(); ++i) {
-//             CommandParsed[0][i] = tolower(CommandParsed[0][i]); 
-//         }
-//         if ((CommandParsed[0] != "nick" && CommandParsed[0] != "pass" && CommandParsed[0] != "user") && (!this->clients[clientfd]->getAuthStatus() || !this->clients[clientfd]->getNickName().empty()
-//                 || !this->clients[clientfd]->getNickName().empty())) {
-//                 LOG_INFO("HE HAS NO AUTH");
-//                 return 1;
-//         }
-//         if (CommandParsed[0] == "join")
-//         {
-//             // parse join args :
-
-//             // check channel exists => if not create it =>
-//                     /*
-//                         - Channel name rules:
-//                             Channels names are strings (beginning with a '&' or '#' character) of
-//                             length up to 200 characters.  Apart from the the requirement that the
-//                             first character being either '&' or '#'; the only restriction on a
-//                             channel name is that it may not contain any spaces (' '), a control G
-//                             (^G or ASCII 7), or a comma (',' which is used as a list item
-//                             separator by the protocol).
-//                         - when creating the channel : the channel is created and the creating user becomes a
-//                             channel operator.
-//                     */
-//             // if the channel exists :
-//             /*
-//                whether or not your
-//                 request to JOIN that channel is hono depends on the current modes
-//                 of the channel. For example, if the channel is invite-only, (+i),
-//                 then you may only join if invited.  As part of the protocol, a user
-//                 may be a part of several channels at once, but a limit of ten (10)
-//                 channels is recommended as being ample for both experienced and
-//                 novice users.
-//             */
-             
-//             // this->channels
-//         }
-//         if (CommandParsed[0] == "nick")
-//         {
-//             if (!this->clients[clientfd]->getAuthStatus())
-//             {
-//                 LOG_ERROR("YOU NEED A PASS FIRST");
-//                 return 1;
-//             }
-//             //   nickname   =  ( letter / special ) *8( letter / digit / special / "-" ) => total 9 chars
-//         }
-//         else if (CommandParsed[0] == "pass")
-//         {
-
-//         }
-//         else if (CommandParsed[0] == "user")
-//         {
-//             if (!this->clients[clientfd]->getAuthStatus())
-//             {
-//                 LOG_ERROR("YOU NEED A PASS FIRST");
-//                 return 1;
-//             }
-//         }
-//         else if (CommandParsed[0] == "mod")
-//         {
-//             //    Parameters: <channel> {[+|-]|o|p|s|i|t|n|b|v} [<limit>] [<user>]
-//             //                [<ban mask>]
-
-//             //    The MODE command is provided so that channel operators may change the
-//             //    characteristics of `their' channel.  It is also requ that servers
-//             //    be able to change channel modes so that channel operators may be
-//             //    created.
-
-//             //    The various modes available for channels are as follows:
-
-//             //            o - give/take channel operator privileges;
-//             //            p - private channel flag;
-//             //            s - secret channel flag;
-//             //            i - invite-only channel flag;
-//             //            t - topic settable by channel operator only flag;
-//             //            n - no messages to channel from clients on the outside;
-//             //            m - moderated channel;
-//             //            l - set the user limit to channel;
-//                 //         b - set a ban mask to keep users out;
-//                 //         v - give/take the ability to speak on a moderated channel;
-//                 //         k - set a channel key (password).
-
-//                 //         When using the 'o' and 'b' options, a restriction on a total of three
-//                 //         per mode command has been imposed.  That is, any combination of 'o'
-
-//         } else if (CommandParsed[0] == "topic") 
-//         {
-//             // Parameters: <channel> [<topic>]
-
-//             // The TOPIC message is used to change or view the topic of a channel.
-//             // The topic for channel <channel> is returned if there is no <topic>
-//             // given.  If the <topic> parameter is present, the topic for that
-//             // channel will be changed, if the channel modes permit this action.
-//         }
-//         // send message by client..
-//     }
-// }
