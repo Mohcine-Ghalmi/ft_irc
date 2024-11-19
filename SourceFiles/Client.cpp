@@ -96,31 +96,71 @@ void Client::RPL_INVITE(Client &client, const std::string &invitedUser, const st
     std::stringstream ss;
 
     ss << ":" << client.getHostname()
-       << " 341 " << client.getNickName()
-       << " " << invitedUser
-       << " " << channelName
-       << " :User invited to the channel\r\n";
+       << " INVITE " << invitedUser
+       << " :" << channelName << "\r\n";
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-void Client::RPL_CHANNELNOTINVITEONLY(Client &client, const std::string &channelName) {
+
+
+void Client::ERR_INVITEONLYCHAN(Client &client, const std::string &channel) {
     std::stringstream ss;
 
     ss << ":" << client.getHostname()
-       << " 341 " << client.getNickName()
-       << " " << channelName
-       << " :This channel is not invite-only; anyone can join\r\n";
+       << " 473 " << client.getNickName()
+       << " " << channel
+       << " :Cannot join channel (+i)\r\n";
+
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
+
 
 void Client::ERR_USERONCHANNEL(Client &client, const std::string &nick, const std::string &channelName)
 {
     std::stringstream ss;
 
     ss << ":" << client.getHostname()
-        << " 443 " << nick
-        << " " << channelName
+        << " 443 " << channelName
+        << " " << nick
         << " :is already on channel\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
+
+
+void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getHostname()
+        << " 443 " << channelName
+        << " :You're not channel operator\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, std::string &userInvited) {
+    std::stringstream ss;
+
+    ss << ":" << client.getHostname()
+        << " 701 " << userInvited
+        << " :You Where Invited To "
+        << channelName << "\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+// void Client::MODE_NOTIFY(const std::string &channelName, const std::string &modeChange, const std::string &target, const std::vector<Client *> &channelClients) {
+//     std::stringstream ss;
+
+//     ss << ":" << getNickname()
+//        << " MODE " << channelName
+//        << " " << modeChange;
+
+//     if (!target.empty()) {
+//         ss << " " << target;
+//     }
+//     ss << "\r\n";
+
+//     // Send the message to all clients in the channel
+//     for (std::vector<Client *>::const_iterator it = channelClients.begin(); it != channelClients.end(); ++it) {
+//         send((*it)->getSocket(), ss.str().c_str(), ss.str().length(), 0);
+//     }
+// }

@@ -43,12 +43,12 @@ class Server {
         bool processINVITECommand(Client &operatorClient, const std::string &message);
         bool processPartCommand(Client &client, const std::string &message);
         //
-        bool checkInvitesToChannel(Client &operatorClient, Channel *channel, std::string &channelName, std::string &userInvited);
+        bool checkInvitesToChannel(Client &operatorClient, Channel *channel, std::string &channelName, Client *userInvited);
 
         Channel* getChannel(const std::string &channelName);
         Channel* createChannel(const std::string &channelName);
         bool joinChannel(Client &client, const std::string &channelName); // JOIN
-        bool leaveChannel(Client &client, const std::string &channelName); // PART  
+        bool leaveChannel(Client &client, const std::string &channelName); // PART
         void sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText);
 
         // helpers

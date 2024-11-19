@@ -68,6 +68,7 @@ std::string Replies::ERR_PASSWDMISMATCH(const std::string &clientNick) {
     return ss.str();
 }
 
+
 // std::string ERR_NEEDMOREPARAMS(int clientSocket) {
 //     std::ostringstream oss;
 //     oss << clientSocket << " 461 :Not enough parameters";

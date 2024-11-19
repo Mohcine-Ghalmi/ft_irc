@@ -348,7 +348,7 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
             Channel *targetChannel = getChannel(targetNick);
             if (targetChannel)
                 sendMessageToChannel(sender, targetNick, messageText);  // Sends to all members of the channel
-        } 
+        }
         else {
             Client *targetClient = getClientByNick(targetNick);
             if (targetClient) {
@@ -368,31 +368,39 @@ bool hasNewline(const std::string& message) {
     return message.find("\n") != std::string::npos;
 }
 
-bool Server::checkInvitesToChannel(Client &operatorClient, Channel *channel, std::string &channelName, std::string &userInvited)
+bool Server::checkInvitesToChannel(Client &operatorClient, Channel *channel, std::string &channelName, Client *userInvited)
 {
     if (!channel) {
         operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);//channel doesn't exist
         LOG_ERROR("Channel Not Found");
         return false;
     }
-    if (!getClientByNick(userInvited)) {
-        operatorClient.ERR_NOSUCHNICK(operatorClient, userInvited);//user doesn't exist
-        LOG_ERROR("User Not Found");
-        return false;
-    }
     if (!channel->isInviteOnly())
     {
-        operatorClient.RPL_CHANNELNOTINVITEONLY(operatorClient, channelName);
+        operatorClient.ERR_INVITEONLYCHAN(operatorClient, channelName);
         LOG_ERROR("Channel is not invite-only");
         return false;
     }
-    if (channel->getMembers().find(userInvited) != channel->getMembers().end())
+    if (channel->getMembers().find(userInvited->getNickName()) != channel->getMembers().end())
     {
-        operatorClient.ERR_USERONCHANNEL(operatorClient, userInvited, channelName);
+        operatorClient.ERR_USERONCHANNEL(operatorClient, userInvited->getNickName(), channelName);
         LOG_ERROR("User already on channel");
         return false;
     }
     return true;
+}
+
+void sendInviteReply(Channel &channel, const std::string &invited) {
+    std::string ss = "";
+
+    for (std::map<std::string, Client>::iterator it =  channel.getMembers().begin(); it != channel.getMembers().end(); it++) {
+        Client& targetClient = it->second;
+        ss + ":" + channel.getName()
+        + " INVITE " + invited
+        + " :" + channel.getName() + "\r\n";
+        std::cout << targetClient.getNickName() << std::endl;
+        send(targetClient.getSocket(), ss.c_str(), ss.length(), 0);
+    }
 }
 
 bool Server::processINVITECommand(Client &operatorClient, const std::string &message) {
@@ -408,36 +416,51 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
         return false;
     }
     Channel *channel = getChannel(channelName);
-    if (!checkInvitesToChannel(operatorClient, channel, channelName, userInvited))
+    Client *invitedClient = getClientByNick(userInvited);
+    if (!invitedClient) {
+        operatorClient.ERR_NOSUCHNICK(operatorClient, userInvited);//user doesn't exist
+        LOG_ERROR("User Not Found");
         return false;
-    operatorClient.RPL_INVITE(operatorClient, userInvited, channelName);
+    }
+    if (!checkInvitesToChannel(operatorClient, channel, channelName, invitedClient))
+        return false;
+    // operatorClient.RPL_INVITE(operatorClient, userInvited, channelName);
+    sendInviteReply(*channel, userInvited);
+    invitedClient->RPL_INVITESENTTO(*invitedClient, channelName, userInvited);
     return true;
 }
+
+
 
 bool Server::processModeCommand(Client &operatorClient, const std::string &message) {
     (void)operatorClient;
     if (!this->proccessCommandHelper(message, "MODE"))
         return false;
+    // while (getOperators().begin())
     std::istringstream ss(message);
     std::cout << message << std::endl;
     std::string command, channelName, modes, param;
     ss >> command >> channelName >> modes >> param;
-    std::cout << "command : " << command << std::endl;
-    std::cout << "channelName : " << channelName << std::endl;
-    std::cout << "modes : " << modes << std::endl;
-    std::cout << "param : " << param << std::endl;
-    if (command.empty() || modes.empty() || channelName.empty())
+    // std::cout << "command : " << command << std::endl;
+    // std::cout << "channelName : " << channelName << std::endl;
+    // std::cout << "modes : " << modes << std::endl;
+    // std::cout << "param : " << param << std::endl;
+    if (command.empty() || modes.empty())
     {
         operatorClient.ERR_NEEDMOREPARAMS(operatorClient, "MODE");
-        std::cout << "return 1" << std::endl;
         return false;
     }
     Channel* channel = getChannel(channelName);
     if (!channel)
     {
         operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);//channel doesn't exist
-        std::cout << "return 2" << std::endl;
         LOG_ERROR("Channel Not Found");
+        return false;
+    }
+    if (channel->getOperators().find(operatorClient.getNickName()) != channel->getOperators().end())
+    {
+        operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
+        LOG_ERROR(operatorClient.getNickName() << " Is Not An Operator On This Channel");
         return false;
     }
     // if (!channel || !channel->isOperator(&operatorClient)) {
@@ -449,15 +472,9 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
         switch (mode) {
             case 'i': // Invite-only
                 if (modes[0] == '+')
-                {
-                    std::cout << "set to 1" << std::endl;
                     channel->setInviteOnly(1);
-                }
                 else
-                {
-                    std::cout << "set to 0" << std::endl;
                     channel->setInviteOnly(0);
-                }
                 break;
             case 't': // Topic restriction
                 std::cout << "Mode Seted to t"<< std::endl;
@@ -545,7 +562,7 @@ Channel* Server::getChannel(const std::string &channelName) {
 
     while (itStart != itEnd)
         itStart++;
-    
+
     std::map<std::string, Channel>::iterator it = channels.find(channelName);
     if (it != channels.end())
         return &it->second;
@@ -559,8 +576,14 @@ bool Server::joinChannel(Client &client, const std::string &channelName) { // th
         //     LOG_INFO("already a memeber "<< client.getNickName());
         //     return
         // }
+        if (channel->isInviteOnly())
+        {
+            client.ERR_INVITEONLYCHAN(client, channelName);
+            LOG_ERROR(channelName << "is invite only you can't join without invite");
+            return false;
+        }
         channel->addMember(&client);
-        if (channel->getMembers().size() == 1) // if the channel doesn't exists the first user joined it must be the operator
+        if (channel->getMembers().size() == 0) // if the channel doesn't exists the first user joined it must be the operator
             channel->addOperator(&client);
         //client.sendReply(331, client);  // Send a welcome message or similar notification
         LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
@@ -680,10 +703,10 @@ void Server::start() {
 //     std::array<char, READ_BUFFER_SIZE> buffer;
 //     ssize_t ret = recv(clientfd, buffer.data(), buffer.size(), 0);
 //     if (ret <= 0){
-//         //                         if (ret == 0) { 
+//         //                         if (ret == 0) {
 //         //     LOG_INFO("Client closed connection");  // Graceful close
 //         // } else {
-//         //     LOG_ERROR("Error occu on socket: " << strerror(errno)); 
+//         //     LOG_ERROR("Error occu on socket: " << strerror(errno));
 //         // }
 //         LOG_ERROR("To remove client");
 //         FD_CLR(clientfd, &(this->all_objs));
@@ -695,13 +718,13 @@ void Server::start() {
 //     tmp.push_back(buffer.data()[s]);
 //     }
 //     LOG_INFO("This content is: " << tmp << "the size is: " << ret);
-//     std::pair<bool, std::string> result = this->clients[clientfd]->setBuffer(tmp); // check if I recieved the \r\n : 
+//     std::pair<bool, std::string> result = this->clients[clientfd]->setBuffer(tmp); // check if I recieved the \r\n :
 //     if (result.first) // message is finished!
 //     {
-//         // handel message by client -> 
+//         // handel message by client ->
 //         std::vector<std::string> CommandParsed = tools.CommandParser(result.second);
 //         for (size_t i = 0; i < CommandParsed[0].size(); ++i) {
-//             CommandParsed[0][i] = tolower(CommandParsed[0][i]); 
+//             CommandParsed[0][i] = tolower(CommandParsed[0][i]);
 //         }
 //         if ((CommandParsed[0] != "nick" && CommandParsed[0] != "pass" && CommandParsed[0] != "user") && (!this->clients[clientfd]->getAuthStatus() || !this->clients[clientfd]->getNickName().empty()
 //                 || !this->clients[clientfd]->getNickName().empty())) {
@@ -734,7 +757,7 @@ void Server::start() {
 //                 channels is recommended as being ample for both experienced and
 //                 novice users.
 //             */
-             
+
 //             // this->channels
 //         }
 //         if (CommandParsed[0] == "nick")
@@ -785,7 +808,7 @@ void Server::start() {
 //                 //         When using the 'o' and 'b' options, a restriction on a total of three
 //                 //         per mode command has been imposed.  That is, any combination of 'o'
 
-//         } else if (CommandParsed[0] == "topic") 
+//         } else if (CommandParsed[0] == "topic")
 //         {
 //             // Parameters: <channel> [<topic>]
 

@@ -82,6 +82,8 @@ class Client{
         void ERR_NEEDMOREPARAMS(Client &client, std::string cmd);
         void ERR_NOSUCHCHANNEL(Client &client, const std::string &channelName);
         void RPL_INVITE(Client &client, const std::string &invitedUser, const std::string &channelName);
-        void RPL_CHANNELNOTINVITEONLY(Client &client, const std::string &channelName);
+        void ERR_INVITEONLYCHAN(Client &client, const std::string &channelName);
         void ERR_USERONCHANNEL(Client &client, const std::string &nick, const std::string &channelName);
+        void ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName);
+        void RPL_INVITESENTTO(Client &client, const std::string &channelName,std::string &userInvited);
 };
