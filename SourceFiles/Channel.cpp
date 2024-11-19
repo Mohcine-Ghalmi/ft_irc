@@ -13,16 +13,23 @@ int Channel::getUserLimit() const { return userLimit; }
 bool Channel::isOperator(Client* client) const { return operators.find(client->getNickName()) != operators.end(); }
 
 void Channel::setTopic(const std::string &newTopic) { topic = newTopic; }
-void Channel::addOperator(Client* client) { operators.insert(std::pair<std::string, Client>(client->getNickName(), *client)); }
+void Channel::addOperator(Client* client) {
+    operators.insert(std::pair<std::string, Client>(client->getNickName(), *client));
+ }
 void Channel::removeOperator(Client* client) { operators.erase(client->getNickName()); }
 void Channel::addMember(Client* client) {
-    members.insert(std::pair<std::string, Client>(client->getNickName(), *client)); 
+    members.insert(std::pair<std::string, Client>(client->getNickName(), *client));
 }
-void Channel::removeMember(Client* client) { 
+void Channel::removeMember(Client* client) {
     members.erase(client->getNickName());
 }
 bool Channel::isMember(Client* client) const { return members.find(client->getNickName()) != members.end(); }
-std::map<std::string, Client>& Channel::getMembers()  { return members; }
+std::map<std::string, Client>& Channel::getMembers()  {
+    return members;
+ }
+std::map<std::string, Client>& Channel::getOperators()  {
+    return operators;
+ }
 
 void Channel::setInviteOnly(bool value) { inviteOnly = value; }
 void Channel::setTopicRestriction(bool value) { topicRestriction = value; }

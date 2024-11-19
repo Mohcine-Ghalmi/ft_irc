@@ -73,7 +73,7 @@ Server::Server(int argc, char **argv) {
 }
 
 Server::~Server(){
-    close(serverSocket); 
+    close(serverSocket);
 }
 
 int Server::getServerSocket() {
@@ -81,7 +81,7 @@ int Server::getServerSocket() {
 }
 
 void sendHellGate(int client_socket) {
-    std::string hellGate = 
+    std::string hellGate =
         "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\r\n"
         "    🔥          Welcome to       🔥\n"
         "    🔥            Hell!          🔥\n"
@@ -108,10 +108,10 @@ std::vector<std::string> splitMessages(const std::string &buffer) {
     std::vector<std::string> lines;
     std::istringstream stream(buffer);
     std::string line;
-    
+
     while (std::getline(stream, line))
         lines.push_back(line);
-    
+
     return lines;
 }
 
@@ -130,7 +130,7 @@ bool Server::processPassCommand(Client &client, const std::string &message) {
             pass.erase(pass.length() - 1);
 
         if (pass != password) {
-            client.sendReply(464, client); // we will not use this because pass is the first thing we check so we don't have enought data 
+            client.sendReply(464, client); // we will not use this because pass is the first thing we check so we don't have enought data
             LOG_SERVER("Invalid password");
             client.clearBuffer();
             return false;
@@ -206,7 +206,7 @@ bool Server::processUserCommand(Client &client, const std::string &message) {
     if (this->proccessCommandHelper(message, "USER")) {
         std::stringstream ss(message.substr(5));
         std::string username, hostname, realname;
-        
+
         ss >> username >> hostname;  // Extract username and hostname
 
         size_t realnamePos = message.find(':');
@@ -248,7 +248,7 @@ bool Server::setUpClient(Client &client) {
         }else if (processUserCommand(client, message)) {
             messages.erase(messages.begin() + i);
             continue;
-        } 
+        }
         else
             ++i;
     }
@@ -272,7 +272,7 @@ void Server::updateNickUser(Client &client) {
         if (processNickCommand(client, message)) {
             messages.erase(messages.begin() + i);
             client.sendReply(001, client);
-            // may add nick name updated reply 
+            // may add nick name updated reply
             continue;
         } else if (processUserCommand(client, message)) {
             messages.erase(messages.begin() + i);
@@ -332,7 +332,7 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
 
 
 bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
-    if (!this->proccessCommandHelper(message, "PRIVMSG")) 
+    if (!this->proccessCommandHelper(message, "PRIVMSG"))
         return false;
 
     std::istringstream ss(message.substr(8));
@@ -351,13 +351,13 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
             Channel *targetChannel = getChannel(targetNick);
             if (targetChannel)
                 sendMessageToChannel(sender, targetNick, messageText);  // Sends to all members of the channel
-        } 
+        }
         else {
             Client *targetClient = getClientByNick(targetNick);
             if (targetClient) {
                 std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + targetNick + " :" + messageText + "\r\n";
                 send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
-            } else 
+            } else
                 sender.ERR_NOSUCHNICK(sender, targetNick);
         }
     }
@@ -369,6 +369,125 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
 
 bool hasNewline(const std::string& message) {
     return message.find("\n") != std::string::npos;
+}
+
+bool Server::checkInvitesToChannel(Client &operatorClient, Channel *channel, std::string &channelName, std::string &userInvited)
+{
+    if (!channel) {
+        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);//channel doesn't exist
+        LOG_ERROR("Channel Not Found");
+        return false;
+    }
+    if (!getClientByNick(userInvited)) {
+        operatorClient.ERR_NOSUCHNICK(operatorClient, userInvited);//user doesn't exist
+        LOG_ERROR("User Not Found");
+        return false;
+    }
+    if (!channel->isInviteOnly())
+    {
+        operatorClient.RPL_CHANNELNOTINVITEONLY(operatorClient, channelName);
+        LOG_ERROR("Channel is not invite-only");
+        return false;
+    }
+    if (channel->getMembers().find(userInvited) != channel->getMembers().end())
+    {
+        operatorClient.ERR_USERONCHANNEL(operatorClient, userInvited, channelName);
+        LOG_ERROR("User already on channel");
+        return false;
+    }
+    return true;
+}
+
+bool Server::processINVITECommand(Client &operatorClient, const std::string &message) {
+    if (!this->proccessCommandHelper(message, "INVITE"))
+        return false;
+    (void)operatorClient;
+    std::istringstream ss(message);
+    std::string command, userInvited, channelName;
+    ss >> command >> userInvited >> channelName;
+    if (channelName.empty() || userInvited.empty())
+    {
+        operatorClient.ERR_NEEDMOREPARAMS(operatorClient, "INVITE");
+        return false;
+    }
+    Channel *channel = getChannel(channelName);
+    if (!checkInvitesToChannel(operatorClient, channel, channelName, userInvited))
+        return false;
+    operatorClient.RPL_INVITE(operatorClient, userInvited, channelName);
+    return true;
+}
+
+bool Server::processModeCommand(Client &operatorClient, const std::string &message) {
+    (void)operatorClient;
+    if (!this->proccessCommandHelper(message, "MODE"))
+        return false;
+    std::istringstream ss(message);
+    std::cout << message << std::endl;
+    std::string command, channelName, modes, param;
+    ss >> command >> channelName >> modes >> param;
+    std::cout << "command : " << command << std::endl;
+    std::cout << "channelName : " << channelName << std::endl;
+    std::cout << "modes : " << modes << std::endl;
+    std::cout << "param : " << param << std::endl;
+    if (command.empty() || modes.empty() || channelName.empty())
+    {
+        operatorClient.ERR_NEEDMOREPARAMS(operatorClient, "MODE");
+        std::cout << "return 1" << std::endl;
+        return false;
+    }
+    Channel* channel = getChannel(channelName);
+    if (!channel)
+    {
+        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);//channel doesn't exist
+        std::cout << "return 2" << std::endl;
+        LOG_ERROR("Channel Not Found");
+        return false;
+    }
+    // if (!channel || !channel->isOperator(&operatorClient)) {
+    //     operatorClient.sendReply(482, operatorClient);
+    //     return false;
+    // }
+    for (size_t i = 0; i < modes.length(); ++i) {
+        char mode = modes[i];
+        switch (mode) {
+            case 'i': // Invite-only
+                if (modes[0] == '+')
+                {
+                    std::cout << "set to 1" << std::endl;
+                    channel->setInviteOnly(1);
+                }
+                else
+                {
+                    std::cout << "set to 0" << std::endl;
+                    channel->setInviteOnly(0);
+                }
+                break;
+            case 't': // Topic restriction
+                std::cout << "Mode Seted to t"<< std::endl;
+                break;
+            case 'k': // Channel key
+                if (ss >> param) {
+                    std::cout << "Mode Seted to k"<< std::endl;
+                }
+                break;
+            case 'o': // Operator
+                std::cout << "Mode Seted to o" << std::endl;
+                // if (ss >> param) {
+                //     Client* targetClient = getClientByNick(param);
+                //     if (targetClient) {
+                //         channel->addOperator(targetClient);
+                //     }
+                // }
+                break;
+            case 'l': // User limit
+                if (ss >> param) {
+                    // int limit = std::stoi(param);
+                    std::cout << "Mode Seted to l"<< std::endl;
+                }
+                break;
+        }
+    }
+    return true;
 }
 
 void Server::handleClientMessage(Client &client, const std::string &message) {
@@ -390,14 +509,20 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 else if (processJoinCommand(client, message)) {
                     LOG_INFO("Joining done");
                 }
-                
+                else if (processModeCommand(client, message)) {
+                    LOG_INFO("Mode Set");
+                }
+                else if (processINVITECommand(client, message)) {
+                    LOG_INFO("Invite sent");
+                }
+
             }
             client.clearBuffer();
         }
-    } 
+    }
 }
 
-//cmnt this code will work tadaaa magic 
+//cmnt this code will work tadaaa magic
 Channel* Server::createChannel(const std::string &channelName) {
     std::string realName; // this real name must be checked for the ',' so you get the names
     unsigned long pos = channelName.find(" ");
@@ -423,7 +548,7 @@ Channel* Server::getChannel(const std::string &channelName) {
         // std::cout << itStart->first.length() << std::endl;
         itStart++;
     }
-    
+
     std::map<std::string, Channel>::iterator it = channels.find(channelName);
     if (it != channels.end())
         return &it->second;
@@ -433,6 +558,10 @@ Channel* Server::getChannel(const std::string &channelName) {
 bool Server::joinChannel(Client &client, const std::string &channelName) { // this should check the channel mode
     Channel* channel = createChannel(channelName);  // Create channel if it doesn't exist
     if (channel) {
+        // if(channel->getMembers().find(client.getNickName()) != channel->getMembers().end()) {
+        //     LOG_INFO("already a memeber "<< client.getNickName());
+        //     return
+        // }
         channel->addMember(&client);
         if (channel->getMembers().size() == 1) // if the channel doesn't exists the first user joined it must be the operator
             channel->addOperator(&client);
@@ -503,7 +632,7 @@ void Server::start() {
 
         for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ++it) {
             if (it->getSocket() > 0)
-                FD_SET(it->getSocket(), &readfds); // make the client socket a memeber of fd_set 
+                FD_SET(it->getSocket(), &readfds); // make the client socket a memeber of fd_set
             if (it->getSocket() > maxFd)
                 maxFd = it->getSocket();
         }
@@ -525,10 +654,10 @@ void Server::start() {
 //     std::array<char, READ_BUFFER_SIZE> buffer;
 //     ssize_t ret = recv(clientfd, buffer.data(), buffer.size(), 0);
 //     if (ret <= 0){
-//         //                         if (ret == 0) { 
+//         //                         if (ret == 0) {
 //         //     LOG_INFO("Client closed connection");  // Graceful close
 //         // } else {
-//         //     LOG_ERROR("Error occu on socket: " << strerror(errno)); 
+//         //     LOG_ERROR("Error occu on socket: " << strerror(errno));
 //         // }
 //         LOG_ERROR("To remove client");
 //         FD_CLR(clientfd, &(this->all_objs));
@@ -540,13 +669,13 @@ void Server::start() {
 //     tmp.push_back(buffer.data()[s]);
 //     }
 //     LOG_INFO("This content is: " << tmp << "the size is: " << ret);
-//     std::pair<bool, std::string> result = this->clients[clientfd]->setBuffer(tmp); // check if I recieved the \r\n : 
+//     std::pair<bool, std::string> result = this->clients[clientfd]->setBuffer(tmp); // check if I recieved the \r\n :
 //     if (result.first) // message is finished!
 //     {
-//         // handel message by client -> 
+//         // handel message by client ->
 //         std::vector<std::string> CommandParsed = tools.CommandParser(result.second);
 //         for (size_t i = 0; i < CommandParsed[0].size(); ++i) {
-//             CommandParsed[0][i] = tolower(CommandParsed[0][i]); 
+//             CommandParsed[0][i] = tolower(CommandParsed[0][i]);
 //         }
 //         if ((CommandParsed[0] != "nick" && CommandParsed[0] != "pass" && CommandParsed[0] != "user") && (!this->clients[clientfd]->getAuthStatus() || !this->clients[clientfd]->getNickName().empty()
 //                 || !this->clients[clientfd]->getNickName().empty())) {
@@ -579,7 +708,7 @@ void Server::start() {
 //                 channels is recommended as being ample for both experienced and
 //                 novice users.
 //             */
-             
+
 //             // this->channels
 //         }
 //         if (CommandParsed[0] == "nick")
@@ -630,7 +759,7 @@ void Server::start() {
 //                 //         When using the 'o' and 'b' options, a restriction on a total of three
 //                 //         per mode command has been imposed.  That is, any combination of 'o'
 
-//         } else if (CommandParsed[0] == "topic") 
+//         } else if (CommandParsed[0] == "topic")
 //         {
 //             // Parameters: <channel> [<topic>]
 

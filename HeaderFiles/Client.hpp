@@ -24,8 +24,8 @@
 #define MAX_CLIENTS 10
 
 #define LOG_INFO(custom_string)  \
-    std::cout  << "INFO: " << custom_string << RESET << std::endl; 
- 
+    std::cout  << "INFO: " << custom_string << RESET << std::endl;
+
 #define LOG_ERROR(custom_string)  \
     std::cout << "ERROR: " << custom_string<< std::endl;
 
@@ -57,14 +57,14 @@ class Client{
         Client(int socket);
         Client(const Client &client);
         ~Client();
-       
+
         int getSocket();
         std::string getBuffer();
         std::string getNickName();
         std::string getUserName();
         std::string getHostname();
         bool isAuthenticated();
-       
+
         std::string getPassword();
         void setNickName(const std::string &nick);
         void setUserName(const std::string &user);
@@ -80,4 +80,8 @@ class Client{
         void ERR_NOSUCHNICK(Client &client, const std::string &targetNick);
         void ERR_ERRONEUSNICKNAME(Client &client, const std::string &invalidNick);
         void ERR_NEEDMOREPARAMS(Client &client, std::string cmd);
+        void ERR_NOSUCHCHANNEL(Client &client, const std::string &channelName);
+        void RPL_INVITE(Client &client, const std::string &invitedUser, const std::string &channelName);
+        void RPL_CHANNELNOTINVITEONLY(Client &client, const std::string &channelName);
+        void ERR_USERONCHANNEL(Client &client, const std::string &nick, const std::string &channelName);
 };

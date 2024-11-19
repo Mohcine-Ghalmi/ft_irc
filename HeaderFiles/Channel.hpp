@@ -22,7 +22,7 @@ class Channel {
         Channel(const std::string &channelName);
         Channel();
         Channel(const Channel &org);
-        
+
 
         // Basic getter/setter functions
         const std::string& getName() const;
@@ -41,6 +41,7 @@ class Channel {
         void removeMember(Client* client);
         bool isMember(Client* client) const;
         std::map<std::string, Client>& getMembers();
+        std::map<std::string, Client>& getOperators();
 
         void setInviteOnly(bool value);
         void setTopicRestriction(bool value);
