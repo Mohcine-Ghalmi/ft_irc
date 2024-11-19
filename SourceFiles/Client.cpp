@@ -28,7 +28,7 @@ void Client::authenticate() { authenticated = true;}
 
 void Client::sendReply(int replyNumber, Client &client) {
     std::string message;
-    
+
     switch (replyNumber) {
         case 001:
             message = replies.RPL_WELCOME(client.getNickName(), client.getUserName());
@@ -62,7 +62,7 @@ void Client::ERR_NICKNAMEINUSE(Client &client, const std::string &newNick) {
 
 void Client::ERR_NOSUCHNICK(Client &client,  const std::string &targetNick) {
     std::stringstream ss;
-    
+
     ss << ":" << client.getNickName() << " 401 " << client.getNickName()  << " " << targetNick << " :No such nick/channel\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
@@ -78,5 +78,49 @@ void Client::ERR_NEEDMOREPARAMS(Client &client, std::string cmd) {
     std::stringstream ss;
 
     ss <<  ":" << client.getHostname() << " 461 " << client.getNickName() << " " << cmd << " :Not enough parameters\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::ERR_NOSUCHCHANNEL(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getHostname()
+       << " 403 " << client.getNickName()
+       << " " << channelName
+       << " :No such channel\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::RPL_INVITE(Client &client, const std::string &invitedUser, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getHostname()
+       << " 341 " << client.getNickName()
+       << " " << invitedUser
+       << " " << channelName
+       << " :User invited to the channel\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::RPL_CHANNELNOTINVITEONLY(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getHostname()
+       << " 341 " << client.getNickName()
+       << " " << channelName
+       << " :This channel is not invite-only; anyone can join\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::ERR_USERONCHANNEL(Client &client, const std::string &nick, const std::string &channelName)
+{
+    std::stringstream ss;
+
+    ss << ":" << client.getHostname()
+        << " 443 " << nick
+        << " " << channelName
+        << " :is already on channel\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }

@@ -67,3 +67,9 @@ std::string Replies::ERR_PASSWDMISMATCH(const std::string &clientNick) {
     ss <<  ":" << clientNick << " 464 " << clientNick << " :Password incorrect\r\n";
     return ss.str();
 }
+
+// std::string ERR_NEEDMOREPARAMS(int clientSocket) {
+//     std::ostringstream oss;
+//     oss << clientSocket << " 461 :Not enough parameters";
+//     return oss.str();
+// }
