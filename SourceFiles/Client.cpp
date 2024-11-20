@@ -67,6 +67,16 @@ void Client::ERR_NOSUCHNICK(Client &client,  const std::string &targetNick) {
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
+void Client::ERR_NOSUCHNICKINCHANNEL(Client &client, const std::string &targetNick, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << " NOTICE " << channelName
+       << " :" << targetNick << " is not in this channel.\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+
 void Client::ERR_ERRONEUSNICKNAME(Client &client, const std::string &invalidNick) {
     std::stringstream ss;
 
@@ -134,6 +144,15 @@ void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName
     ss << ":" << client.getHostname()
         << " 443 " << channelName
         << " :You're not channel operator\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::RPL_KICKED(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getHostname()
+        << " KICK " << channelName
+        << " :You Where Kicked From This Channel\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 

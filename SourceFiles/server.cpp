@@ -309,6 +309,7 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
     Channel* channel = getChannel(channelName);
     if (!channel) {
         LOG_SERVER("channel doesn't exist");
+        sender.ERR_NOSUCHCHANNEL(sender, channelName);//channel doesn't exist
         // sender.sendReply(ERR_NOSUCHCHANNEL, channelName + " :No such channel");
         return;
     }
@@ -390,8 +391,8 @@ bool Server::checkInvitesToChannel(Client &operatorClient, Channel *channel, std
     return true;
 }
 
-void sendInviteReply(Channel &channel, const std::string &invited) {
-    std::string message = ":" + channel.getName() +
+void sendInviteReply(Client operatorClient,Channel &channel, const std::string &invited) {
+    std::string message = ":" + operatorClient.getHostname() +
                           " INVITE " + invited +
                           " :" + channel.getName() + "\r\n";
 
@@ -402,6 +403,42 @@ void sendInviteReply(Channel &channel, const std::string &invited) {
     }
 }
 
+
+bool Server::processKICKCommand(Client &operatorClient, const std::string &message) {
+    if (!proccessCommandHelper(message, "KICK"))
+        return false;
+    std::stringstream ss(message);
+    std::string command, user, channelName;
+    ss >> command >> channelName >> user;
+    Channel *channel = getChannel(channelName);
+    if (!channel)
+    {
+        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);
+        LOG_ERROR("Channel Not Found");
+        return false;
+    }
+    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end())
+    {
+        operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
+        LOG_ERROR(operatorClient.getNickName() << " Is Not An Operator On This Channel");
+        return false;
+    }
+    if (channel->getMembers().find(user) != channel->getMembers().end())
+    {
+        Client *clientKicked = getClientByNick(user);
+        channel->getMembers().erase(user);
+        /*
+            i still need to close the channel window for the kicked user !?
+        */
+        clientKicked->RPL_KICKED(*clientKicked, channelName);
+        return true;
+    } else {
+        operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, user, channelName);
+        LOG_ERROR(user << " This Is User Is Not In : " << channelName);
+        return false;
+    }
+    return (false);
+}
 
 bool Server::processINVITECommand(Client &operatorClient, const std::string &message) {
     if (!this->proccessCommandHelper(message, "INVITE"))
@@ -425,7 +462,7 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
     if (!checkInvitesToChannel(operatorClient, channel, channelName, invitedClient))
         return false;
     // operatorClient.RPL_INVITE(operatorClient, userInvited, channelName);
-    sendInviteReply(*channel, userInvited);
+    sendInviteReply(operatorClient, *channel, userInvited);
     invitedClient->RPL_INVITESENTTO(*invitedClient, channelName, userInvited);
     return true;
 }
@@ -527,9 +564,11 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 }
                 else if (processINVITECommand(client, message)) {
                     LOG_INFO("Invite sent");
-                } else if (processPartCommand(client, message))
+                } else if (processPartCommand(client, message)) {
                     LOG_INFO("Part sent");
-
+                }
+                else if (processKICKCommand(client, message))
+                    LOG_INFO("Part sent");
 
             }
             client.clearBuffer();
@@ -580,9 +619,9 @@ bool Server::joinChannel(Client &client, const std::string &channelName) { // th
             LOG_ERROR(channelName << "is invite only you can't join without invite");
             return false;
         }
-        channel->addMember(&client);
-        if (channel->getMembers().size() == 0) // if the channel doesn't exists the first user joined it must be the operator
+        if (channel->getMembers().size() <= 0) // if the channel doesn't exists the first user joined it must be the operator
             channel->addOperator(&client);
+        channel->addMember(&client);
         //client.sendReply(331, client);  // Send a welcome message or similar notification
         LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
         return true;

@@ -42,6 +42,7 @@ class Server {
         bool processModeCommand(Client &operatorClient, const std::string &message);
         bool processINVITECommand(Client &operatorClient, const std::string &message);
         bool processPartCommand(Client &client, const std::string &message);
+        bool processKICKCommand(Client &operatorClient, const std::string &message);
         //
         bool checkInvitesToChannel(Client &operatorClient, Channel *channel, std::string &channelName, Client *userInvited);
 
