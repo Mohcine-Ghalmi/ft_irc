@@ -147,13 +147,17 @@ void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-void Client::RPL_KICKED(Client &client, const std::string &channelName) {
+void Client::RPL_KICKED(Client &client, const std::string &channelName, const std::string &operatorName) {
     std::stringstream ss;
+    std::stringstream ss2;
 
     ss << ":" << client.getHostname()
         << " KICK " << channelName
-        << " :You Where Kicked From This Channel\r\n";
+        << " :" << client.getNickName() << "\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    ss2 << "You were kicked from " << channelName
+        << " by " << operatorName << "\r\n";
+    send(client.getSocket(), ss2.str().c_str(), ss2.str().length(), 0);
 }
 
 void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, std::string &userInvited) {

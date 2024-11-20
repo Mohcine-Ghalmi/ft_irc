@@ -427,10 +427,7 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
     {
         Client *clientKicked = getClientByNick(user);
         channel->getMembers().erase(user);
-        /*
-            i still need to close the channel window for the kicked user !?
-        */
-        clientKicked->RPL_KICKED(*clientKicked, channelName);
+        clientKicked->RPL_KICKED(*clientKicked, channelName, operatorClient.getNickName());
         return true;
     } else {
         operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, user, channelName);
@@ -472,15 +469,11 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
     (void)operatorClient;
     if (!this->proccessCommandHelper(message, "MODE"))
         return false;
-    // while (getOperators().begin())
     std::istringstream ss(message);
     std::cout << message << std::endl;
     std::string command, channelName, modes, param;
     ss >> command >> channelName >> modes >> param;
-    // std::cout << "command : " << command << std::endl;
-    // std::cout << "channelName : " << channelName << std::endl;
-    // std::cout << "modes : " << modes << std::endl;
-    // std::cout << "param : " << param << std::endl;
+
     if (command.empty() || modes.empty())
     {
         operatorClient.ERR_NEEDMOREPARAMS(operatorClient, "MODE");
