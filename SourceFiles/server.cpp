@@ -417,46 +417,73 @@ void sendkickRepleyToChannel(Client operatorClient,Channel &channel, const std::
 }
 
 
-bool Server::processKICKCommand(Client &operatorClient, const std::string &message) {
-    if (!proccessCommandHelper(message, "KICK"))
-        return false;
-    std::stringstream ss(message);
-    std::string command, user, channelName , reason;
-    ss >> command >> channelName >> user;
-    reason = ss.str().substr(ss.str().find(":"), ss.str().length());
-    if (user == operatorClient.getNickName())
-    {
-        operatorClient.RPL_CANTKICKSELF(operatorClient, channelName);
-        LOG_ERROR("You Can't KICK Your self from a channel");
-        return false;
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::vector<std::string> splitByDelimiter(const std::string &input, const std::string &delimiter) {
+    std::vector<std::string> tokens;
+    size_t start = 0, end;
+    while ((end = input.find(delimiter, start)) != std::string::npos) {
+        tokens.push_back(input.substr(start, end - start));
+        start = end + delimiter.length();
     }
-    Channel *channel = getChannel(channelName);
-    if (!channel)
-    {
-        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);
-        LOG_ERROR("Channel Not Found");
-        return false;
-    }
-    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end())
-    {
-        operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
-        LOG_ERROR(operatorClient.getNickName() << " Is Not An Operator On This Channel");
-        return false;
-    }
-    if (channel->getMembers().find(user) != channel->getMembers().end())
-    {
-        Client *clientKicked = getClientByNick(user);
-        channel->getMembers().erase(user);
-        sendkickRepleyToChannel(operatorClient, *channel, user);
-        clientKicked->RPL_KICKED(*clientKicked, channelName, operatorClient, reason);
-        return true;
-    } else {
-        operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, user, channelName);
-        LOG_ERROR(user << " This Is User Is Not In : " << channelName);
-        return false;
-    }
-    return (false);
+    tokens.push_back(input.substr(start));
+    return tokens;
 }
+
+bool Server::processKICKCommand(Client &operatorClient, const std::string &message) {
+    // Split the message into individual KICK commands
+    std::vector<std::string> commandList = splitByDelimiter(message, "\r\n");
+
+    // Process each KICK command in the vector
+    for (size_t i = 0; i < commandList.size(); ++i) {
+        const std::string &singleMessage = commandList[i];
+        if (!proccessCommandHelper(singleMessage, "KICK"))
+            continue;
+
+        std::stringstream ss(singleMessage);
+        std::string command, channelName, user, reason;
+
+        ss >> command >> channelName >> user;
+
+        // Extract the reason from the message
+        reason = ss.str().substr(ss.str().find(":"), ss.str().length());
+
+        // Validate and process the KICK command
+        if (user == operatorClient.getNickName()) {
+            operatorClient.RPL_CANTKICKSELF(operatorClient, channelName);
+            LOG_ERROR("You can't KICK yourself from a channel");
+            continue;
+        }
+
+        Channel *channel = getChannel(channelName);
+        if (!channel) {
+            operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);
+            LOG_ERROR("Channel not found: " << channelName);
+            continue;
+        }
+
+        if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end()) {
+            operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
+            LOG_ERROR(operatorClient.getNickName() << " is not an operator on this channel");
+            continue;
+        }
+
+        if (channel->getMembers().find(user) != channel->getMembers().end()) {
+            Client *clientKicked = getClientByNick(user);
+            channel->getMembers().erase(user);
+            sendkickRepleyToChannel(operatorClient, *channel, user);
+            clientKicked->RPL_KICKED(*clientKicked, channelName, operatorClient, reason);
+        } else {
+            operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, user, channelName);
+            LOG_ERROR("User " << user << " is not in channel: " << channelName);
+        }
+    }
+
+    return true; // Return true if processing completes successfully
+}
+
 
 bool Server::processTOPICcommand(Client &operatorClient, const std::string &message) {
     if (!proccessCommandHelper(message, "TOPIC"))

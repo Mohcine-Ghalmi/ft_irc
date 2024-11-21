@@ -170,7 +170,8 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 
     // to send a replie to the kicked user that he was kicked
-    if (reason == ":\r\n")
+    std::cout << "{" << reason << "}" << std::endl;
+    if (reason == ":")
         reason = "behave yourself please";
     ss2 << "You were kicked from " << channelName
         << " by " << operatorClient.getNickName() << " reason " << reason << "\r\n";
