@@ -147,17 +147,36 @@ void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-void Client::RPL_KICKED(Client &client, const std::string &channelName, const std::string &operatorName) {
+void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName()
+       << " NOTICE " << channelName
+       << " :You cannot kick yourself.\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+
+void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &operatorClient, std::string &reason) {
     std::stringstream ss;
     std::stringstream ss2;
+    std::stringstream ss3;
 
+    // this replie closes the window of the channel for the kicked user
     ss << ":" << client.getHostname()
         << " KICK " << channelName
         << " :" << client.getNickName() << "\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+
+    // to send a replie to the kicked user that he was kicked
+    if (reason == ":\r\n")
+        reason = "behave yourself please";
     ss2 << "You were kicked from " << channelName
-        << " by " << operatorName << "\r\n";
+        << " by " << operatorClient.getNickName() << " reason " << reason << "\r\n";
     send(client.getSocket(), ss2.str().c_str(), ss2.str().length(), 0);
+
+    // to send a replie to the operator that the user was kicked
 }
 
 void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, std::string &userInvited) {

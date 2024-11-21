@@ -403,13 +403,33 @@ void sendInviteReply(Client operatorClient,Channel &channel, const std::string &
     }
 }
 
+void sendkickRepleyToChannel(Client operatorClient,Channel &channel, const std::string &kickedUser) {
+    std::stringstream ss3;
+    ss3 << ":" << operatorClient.getHostname()
+        << " NOTICE " << channel.getName()
+        << " :" << "Kicked " << kickedUser << "\r\n";
+
+
+    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
+        Client targetClient = it->second;
+        send(targetClient.getSocket(), ss3.str().c_str(), ss3.str().length(), 0);
+    }
+}
+
 
 bool Server::processKICKCommand(Client &operatorClient, const std::string &message) {
     if (!proccessCommandHelper(message, "KICK"))
         return false;
     std::stringstream ss(message);
-    std::string command, user, channelName;
+    std::string command, user, channelName , reason;
     ss >> command >> channelName >> user;
+    reason = ss.str().substr(ss.str().find(":"), ss.str().length());
+    if (user == operatorClient.getNickName())
+    {
+        operatorClient.RPL_CANTKICKSELF(operatorClient, channelName);
+        LOG_ERROR("You Can't KICK Your self from a channel");
+        return false;
+    }
     Channel *channel = getChannel(channelName);
     if (!channel)
     {
@@ -427,7 +447,8 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
     {
         Client *clientKicked = getClientByNick(user);
         channel->getMembers().erase(user);
-        clientKicked->RPL_KICKED(*clientKicked, channelName, operatorClient.getNickName());
+        sendkickRepleyToChannel(operatorClient, *channel, user);
+        clientKicked->RPL_KICKED(*clientKicked, channelName, operatorClient, reason);
         return true;
     } else {
         operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, user, channelName);
@@ -435,6 +456,26 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
         return false;
     }
     return (false);
+}
+
+bool Server::processTOPICcommand(Client &operatorClient, const std::string &message) {
+    if (!proccessCommandHelper(message, "TOPIC"))
+        return false;
+    (void)operatorClient;
+    std::istringstream ss(message);
+    std::string command, channelName, topic;
+    ss >> command >> channelName;
+    topic = ss.str().substr(ss.str().find(":"), ss.str().length());
+    std::cout << command << std::endl;
+    std::cout << "channelName : " << channelName << std::endl;
+    std::cout << topic << std::endl;
+    Channel *channel = getChannel(channelName);
+    if (!topic.empty())
+    {
+        channel->setTopic(topic);
+        LOG_MSG("the topic of " << channelName << " was changed to " << topic);
+    }
+    return true;
 }
 
 bool Server::processINVITECommand(Client &operatorClient, const std::string &message) {
@@ -560,8 +601,12 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 } else if (processPartCommand(client, message)) {
                     LOG_INFO("Part sent");
                 }
-                else if (processKICKCommand(client, message))
+                else if (processKICKCommand(client, message)) {
                     LOG_INFO("Part sent");
+                }
+                else if (processTOPICcommand(client, message)) {
+                    LOG_INFO("Part sent");
+                }
 
             }
             client.clearBuffer();

@@ -86,6 +86,7 @@ class Client{
         void ERR_USERONCHANNEL(Client &client, const std::string &nick, const std::string &channelName);
         void ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName);
         void RPL_INVITESENTTO(Client &client, const std::string &channelName,std::string &userInvited);
-        void RPL_KICKED(Client &client, const std::string &channelName, const std::string &operatorName);
+        void RPL_KICKED(Client &client, const std::string &channelName, Client &operatorName, std::string &reason);
         void ERR_NOSUCHNICKINCHANNEL(Client &client,  const std::string &targetNick, const std::string &channelName);
+        void RPL_CANTKICKSELF(Client &client, const std::string &channelName);
 };
