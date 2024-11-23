@@ -23,12 +23,21 @@ void Channel::addMember(Client* client) {
 void Channel::removeMember(Client* client) {
     members.erase(client->getNickName());
 }
+void Channel::addInvitedUser(Client* client) {
+    invitedUsers.insert(std::pair<std::string, Client>(client->getNickName(), *client));
+}
+void Channel::removeInvitedUser(Client* client) {
+    invitedUsers.erase(client->getNickName());
+}
 bool Channel::isMember(Client* client) const { return members.find(client->getNickName()) != members.end(); }
 std::map<std::string, Client>& Channel::getMembers()  {
     return members;
  }
 std::map<std::string, Client>& Channel::getOperators()  {
     return operators;
+ }
+std::map<std::string, Client>& Channel::getInvitedUsers()  {
+    return invitedUsers;
  }
 
 void Channel::setInviteOnly(bool value) { inviteOnly = value; }

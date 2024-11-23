@@ -11,6 +11,7 @@ class Channel {
         std::string topic;
         std::map<std::string, Client> members;       // A set of pointers to clients in this channel
         std::map<std::string, Client> operators;     // Channel operators
+        std::map<std::string, Client> invitedUsers;     // Channel invited users
         bool inviteOnly;                 // i mode
         bool topicRestriction;           // t mode
         bool keyProtected;               // k mode
@@ -39,8 +40,12 @@ class Channel {
         void addMember(Client* client);
         void removeMember(Client* client);
         bool isMember(Client* client) const;
+        //
+        void addInvitedUser(Client* client);
+        void removeInvitedUser(Client* client);
         std::map<std::string, Client>& getMembers();
         std::map<std::string, Client>& getOperators();
+        std::map<std::string, Client>& getInvitedUsers();
 
         void setInviteOnly(bool value);
         void setTopicRestriction(bool value);

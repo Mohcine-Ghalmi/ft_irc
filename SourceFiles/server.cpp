@@ -544,6 +544,8 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
     }
     if (!checkInvitesToChannel(operatorClient, channel, channelName, invitedClient))
         return false;
+    if (channel->isInviteOnly())
+        channel->addInvitedUser(invitedClient);
     // operatorClient.RPL_INVITE(operatorClient, userInvited, channelName);
     sendInviteReply(operatorClient, *channel, userInvited);
     invitedClient->RPL_INVITESENTTO(*invitedClient, channelName, userInvited);
@@ -696,6 +698,13 @@ bool Server::joinChannel(Client &client, const std::string &channelName) { // th
         // }
         if (channel->isInviteOnly())
         {
+            if (channel->getInvitedUsers().find(client.getNickName()) != channel->getInvitedUsers().end())
+            {
+                LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
+                channel->addMember(&client);
+                channel->removeInvitedUser(&client);
+                return true;
+            }
             client.ERR_INVITEONLYCHAN(client, channelName);
             LOG_ERROR(channelName << "is invite only you can't join without invite");
             return false;
