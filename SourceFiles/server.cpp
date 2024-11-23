@@ -506,15 +506,16 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
     std::string command, channelName, topic;
     ss >> command >> channelName;
     topic = ss.str().substr(ss.str().find(":") + 1, ss.str().length());
-    std::cout << command << std::endl;
-    std::cout << "channelName : " << channelName << std::endl;
-    std::cout << topic << std::endl;
     Channel *channel = getChannel(channelName);
+    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end()) {
+        operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
+        LOG_ERROR(operatorClient.getNickName() << " is not an operator on this channel");
+        return false;
+    }
     if (!topic.empty())
     {
         channel->setTopic(topic);
         sendTopicRepleyToChannel(operatorClient, *channel, topic);
-        // operatorClient.RPL_TOPIC(operatorClient, topic, channelName);
         LOG_MSG("the topic of " << channelName << " was changed to " << topic);
     }else {
         LOG_MSG("Topic : " << channel->getTopic());
@@ -571,7 +572,7 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
         LOG_ERROR("Channel Not Found");
         return false;
     }
-    if (channel->getOperators().find(operatorClient.getNickName()) != channel->getOperators().end())
+    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end())
     {
         operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
         LOG_ERROR(operatorClient.getNickName() << " Is Not An Operator On This Channel");
