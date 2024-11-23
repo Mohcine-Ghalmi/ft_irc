@@ -89,4 +89,5 @@ class Client{
         void RPL_KICKED(Client &client, const std::string &channelName, Client &operatorName, std::string &reason);
         void ERR_NOSUCHNICKINCHANNEL(Client &client,  const std::string &targetNick, const std::string &channelName);
         void RPL_CANTKICKSELF(Client &client, const std::string &channelName);
+        void RPL_TOPIC(Client &client, const std::string &topic, const std::string &channelName);
 };

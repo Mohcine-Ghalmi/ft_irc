@@ -336,7 +336,7 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     std::istringstream ss(message.substr(8));
     std::string targetList, messageText;
     ss >> targetList;
-    getline(ss, messageText);
+    std::getline(ss, messageText);
 
     if (!messageText.empty() && messageText[0] == ' ')
         messageText = messageText.substr(1);
@@ -416,6 +416,18 @@ void sendkickRepleyToChannel(Client operatorClient,Channel &channel, const std::
     }
 }
 
+void sendTopicRepleyToChannel(Client operatorClient,Channel &channel, const std::string &topic) {
+    std::stringstream ss;
+    ss << ":" << operatorClient.getNickName() << " TOPIC " << channel.getName()
+       << " :" << topic << "\r\n";
+
+
+    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
+        Client targetClient = it->second;
+        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    }
+}
+
 
 #include <sstream>
 #include <string>
@@ -434,6 +446,8 @@ std::vector<std::string> splitByDelimiter(const std::string &input, const std::s
 
 bool Server::processKICKCommand(Client &operatorClient, const std::string &message) {
     // Split the message into individual KICK commands
+    if (!proccessCommandHelper(message, "KICK"))
+        return false;
     std::vector<std::string> commandList = splitByDelimiter(message, "\r\n");
 
     // Process each KICK command in the vector
@@ -486,13 +500,12 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
 
 
 bool Server::processTOPICcommand(Client &operatorClient, const std::string &message) {
-    if (!proccessCommandHelper(message, "TOPIC"))
+    if (!this->proccessCommandHelper(message, "TOPIC"))
         return false;
-    (void)operatorClient;
     std::istringstream ss(message);
     std::string command, channelName, topic;
     ss >> command >> channelName;
-    topic = ss.str().substr(ss.str().find(":"), ss.str().length());
+    topic = ss.str().substr(ss.str().find(":") + 1, ss.str().length());
     std::cout << command << std::endl;
     std::cout << "channelName : " << channelName << std::endl;
     std::cout << topic << std::endl;
@@ -500,7 +513,11 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
     if (!topic.empty())
     {
         channel->setTopic(topic);
+        sendTopicRepleyToChannel(operatorClient, *channel, topic);
+        // operatorClient.RPL_TOPIC(operatorClient, topic, channelName);
         LOG_MSG("the topic of " << channelName << " was changed to " << topic);
+    }else {
+        LOG_MSG("Topic : " << channel->getTopic());
     }
     return true;
 }
@@ -627,14 +644,12 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                     LOG_INFO("Invite sent");
                 } else if (processPartCommand(client, message)) {
                     LOG_INFO("Part sent");
-                }
-                else if (processKICKCommand(client, message)) {
+                } else if (processKICKCommand(client, message)) {
                     LOG_INFO("Part sent");
                 }
                 else if (processTOPICcommand(client, message)) {
-                    LOG_INFO("Part sent");
+                    LOG_INFO("Topic set");
                 }
-
             }
             client.clearBuffer();
         }

@@ -76,6 +76,15 @@ void Client::ERR_NOSUCHNICKINCHANNEL(Client &client, const std::string &targetNi
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
+void Client::RPL_TOPIC(Client &client, const std::string &topic, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName() << " TOPIC " << channelName
+       << " :" << topic << "\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
 
 void Client::ERR_ERRONEUSNICKNAME(Client &client, const std::string &invalidNick) {
     std::stringstream ss;
@@ -170,7 +179,6 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 
     // to send a replie to the kicked user that he was kicked
-    std::cout << "{" << reason << "}" << std::endl;
     if (reason == ":")
         reason = "behave yourself please";
     ss2 << "You were kicked from " << channelName
