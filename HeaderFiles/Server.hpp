@@ -14,8 +14,8 @@ class Server {
         int serverSocket;
         std::string password;
         std::vector<Client> clients;  // Store clients connected to the server
-        std::map<std::string, Channel> channels;
     public:
+        std::map<std::string, Channel> channels;
         Server(int argc, char **argv);
         void start();
         ~Server();
@@ -49,7 +49,7 @@ class Server {
 
         Channel* getChannel(const std::string &channelName);
         Channel* createChannel(const std::string &channelName);
-        bool joinChannel(Client &client, const std::string &channelName); // JOIN
+        bool joinChannel(Client &client, const std::string &channelName,const std::string &key); // JOIN
         bool leaveChannel(Client &client, const std::string &channelName); // PART
         void sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText);
 

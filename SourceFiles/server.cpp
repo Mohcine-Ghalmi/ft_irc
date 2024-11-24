@@ -340,7 +340,6 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
 
     if (!messageText.empty() && messageText[0] == ' ')
         messageText = messageText.substr(1);
-
     std::stringstream targetStream(targetList);
     std::string targetNick;
     removeCarriageReturn(messageText);
@@ -644,21 +643,29 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 break ;
             case 't': // Topic restriction
                 std::cout << "mode T to " << modes[0];
-                if(paramsInc < params.size())
+                if (paramsInc < params.size())
                     std::cout << params[paramsInc++] << std::endl;
                 else
                     std::cout << "empty" << std::endl;
                 break ;
             case 'k': // Channel key
-                std::cout << "mode K to " << modes[0];
-                if(paramsInc < params.size())
-                    std::cout << params[paramsInc++] << std::endl;
+                if (paramsInc < params.size() && modes[0] == '+')
+                {
+                    removeCarriageReturn(params[paramsInc]);
+                    channel->setKeyProtection(1, params[paramsInc++]);
+                    std::cout << "channel->getKey() : " << channel->getKey() << std::endl;
+                    // std::cout << params[paramsInc++] << std::endl;
+                }
+                else if (paramsInc < params.size() && modes[0] == '-')
+                {
+                    channel->setKeyProtection(0, "");
+                }
                 else
                     std::cout << "empty" << std::endl;
                 break ;
             case 'o': // Operator
                 std::cout << "mode O to " << modes[0];
-                if(paramsInc < params.size())
+                if (paramsInc < params.size())
                     std::cout << params[paramsInc++] << std::endl;
                 else
                     std::cout << "empty" << std::endl;
@@ -773,15 +780,13 @@ Channel* Server::getChannel(const std::string &channelName) {
     return NULL;
 }
 
-bool Server::joinChannel(Client &client, const std::string &channelName) { // this should check the channel mode
+bool Server::joinChannel(Client &client, const std::string &channelName,const std::string &key) { // this should check the channel mode
     Channel* channel = createChannel(channelName);  // Create channel if it doesn't exist
+        LOG_SERVER(" show channel name = " << channelName);
     if (channel) {
-        // if(channel->getMembers().find(client.getNickName()) != channel->getMembers().end()) {
-        //     LOG_INFO("already a memeber "<< client.getNickName());
-        //     return
-        // }
-        if (channel->isKeyProtected())
+        if (channel->isKeyProtected() && channel->getKey() != key)
         {
+            client.ERR_BADCHANNELKEY(client, channelName);
             LOG_ERROR(channelName << " is protected (you need a key/password)");
             return false;
         }
@@ -797,7 +802,7 @@ bool Server::joinChannel(Client &client, const std::string &channelName) { // th
                 return true;
             }
             client.ERR_INVITEONLYCHAN(client, channelName);
-            LOG_ERROR(channelName << "is invite only you can't join without invite");
+            LOG_ERROR(channelName << " is invite only you can't join without invite");
             return false;
         }
         if (channel->getMembers().size() <= 0) // if the channel doesn't exists the first user joined it must be the operator
@@ -843,13 +848,16 @@ bool Server::leaveChannel(Client &client, const std::string &channelName) {
 
 bool Server::processJoinCommand(Client &client, const std::string &message) {
     if (this->proccessCommandHelper(message, "JOIN")) {
-        std::string channelName = message.substr(5);  // Assuming "JOIN #channel" format
+        std::stringstream ss(message);
+        std::string command, channelName, key;
+        ss >> command >> channelName >> key;
         if (channelName.empty()) {
             client.ERR_NEEDMOREPARAMS(client, "JOIN");  // Send ERR_NEEDMOREPARAMS if no channel specified
             return false;
         }
         removeCarriageReturn(channelName);
-        if (joinChannel(client, channelName)){
+        removeCarriageReturn(key);
+        if (joinChannel(client, channelName, key)){
 
             // sendJoinedRepleyToChannel(client, *channel, client.getNickName());
             client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome

@@ -5,6 +5,7 @@ Channel::Channel(const std::string &channelName) : name(channelName), topic(""),
 
 const std::string& Channel::getName() const { return name; }
 const std::string& Channel::getTopic() const { return topic; }
+const std::string& Channel::getKey() const { return key; }
 bool Channel::isInviteOnly() const { return inviteOnly; }
 bool Channel::isTopicRestricted() const { return topicRestriction; }
 bool Channel::hasUserLimit() const { return userLimit > 0; }

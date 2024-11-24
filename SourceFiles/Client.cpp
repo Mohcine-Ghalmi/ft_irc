@@ -76,6 +76,20 @@ void Client::ERR_NOSUCHNICKINCHANNEL(Client &client, const std::string &targetNi
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
+void Client::ERR_BADCHANNELKEY(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    // Constructing the error message according to the IRC protocol
+    ss << ":" << "IRCServer" // Replace with your server name
+       << " 475 " << client.getNickName()
+       << " " << channelName
+       << " :Cannot join channel (+k)\r\n";
+
+    // Sending the error message to the client's socket
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+
 
 void Client::RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName) {
     std::stringstream ss;
