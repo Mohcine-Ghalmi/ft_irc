@@ -628,6 +628,7 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
         return false;
     }
     size_t paramsInc = 0;
+    Client *newOperator;
     for (size_t i = 0; i < modes.length(); ++i) {
         char mode = modes[i];
         switch (mode) {
@@ -664,11 +665,18 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                     std::cout << "empty" << std::endl;
                 break ;
             case 'o': // Operator
-                std::cout << "mode O to " << modes[0];
-                if (paramsInc < params.size())
-                    std::cout << params[paramsInc++] << std::endl;
+                newOperator = getClientByNick(params[paramsInc]);
+                if (!newOperator) {
+                    LOG_ERROR("user not found");
+                    break ;
+                }
+                if (paramsInc < params.size() && modes[0] == '+')
+                    channel->addOperator(newOperator);
+                else if (paramsInc < params.size() && modes[0] == '-')
+                    channel->removeOperator(newOperator);
                 else
                     std::cout << "empty" << std::endl;
+                paramsInc++;
                 break ;
             case 'l': // User limit
                 std::cout << "mode L" << std::endl;

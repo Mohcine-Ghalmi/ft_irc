@@ -94,8 +94,7 @@ void Client::ERR_BADCHANNELKEY(Client &client, const std::string &channelName) {
 void Client::RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName) {
     std::stringstream ss;
 
-    ss << ":" << setterName << " TOPIC " << channelName
-       << " :" << topic << "\r\n";
+    ss << "332 " << setterName << " " << channelName << " :" << topic;
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
