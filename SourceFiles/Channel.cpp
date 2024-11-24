@@ -10,6 +10,8 @@ bool Channel::isTopicRestricted() const { return topicRestriction; }
 bool Channel::hasUserLimit() const { return userLimit > 0; }
 bool Channel::isKeyProtected() const { return keyProtected; }
 int Channel::getUserLimit() const { return userLimit; }
+const std::string& Channel::getTopicSetter() const { return topicSetter; }
+void Channel::setTopicSetter(const std::string &newTopicSetter) { topicSetter = newTopicSetter; }
 bool Channel::isOperator(Client* client) const { return operators.find(client->getNickName()) != operators.end(); }
 
 void Channel::setTopic(const std::string &newTopic) { topic = newTopic; }

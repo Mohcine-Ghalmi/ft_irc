@@ -428,6 +428,33 @@ void sendTopicRepleyToChannel(Client operatorClient,Channel &channel, const std:
     }
 }
 
+void sendJoinedRepleyToChannel(Client operatorClient,Channel &channel, const std::string &user) {
+    std::stringstream ss;
+    ss << ":" << operatorClient.getNickName() << " JOIN " << channel.getName()
+       << " :" << user << "\r\n";
+
+
+    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
+        Client targetClient = it->second;
+        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    }
+}
+
+void sendModeIRepleyToChannel(Client &client, Channel &channel, bool inviteOnly) {
+    std::stringstream ss;
+
+    ss << ":" << " NOTICE " << channel.getName()
+       << " :" << client.getNickName() << " This Channel is "
+       << (inviteOnly ? "Private" : "Public")
+       <<".\r\n";
+
+    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
+        Client targetClient = it->second;
+        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    }
+}
+
+
 
 #include <sstream>
 #include <string>
@@ -515,6 +542,7 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
     if (!topic.empty())
     {
         channel->setTopic(topic);
+        channel->setTopicSetter(operatorClient.getNickName());
         sendTopicRepleyToChannel(operatorClient, *channel, topic);
         LOG_MSG("the topic of " << channelName << " was changed to " << topic);
     }else {
@@ -552,15 +580,35 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
     return true;
 }
 
+std::vector<std::string> parameters(const std::string &message, std::string &modeSection, std::string &channel) {
+    std::istringstream ss(message);
+    std::string command;
+    std::vector<std::string> parameters;
+
+    ss >> command;
+    // std::cout << "ss : " << ss.str() << std::endl;
+    ss >> channel;
+    ss >> modeSection;
+    std::string param;
+    while (ss >> param)
+    {
+        std::cout << "Param : " << param << std::endl;
+        parameters.push_back(param);
+    }
+
+    // if (!modeSection.empty() && (modeSection[0] == '+' || modeSection[0] == '-'))
+        // modes = modeSection;
+    return parameters;
+}
 
 bool Server::processModeCommand(Client &operatorClient, const std::string &message) {
     (void)operatorClient;
     if (!this->proccessCommandHelper(message, "MODE"))
         return false;
-    std::istringstream ss(message);
-    std::cout << message << std::endl;
-    std::string command, channelName, modes, param;
-    ss >> command >> channelName >> modes >> param;
+    std::string channelName, modes;
+    std::vector<std::string> params = parameters(message, modes, channelName);
+    std::string command = "MODE";
+    // ss >> command >> channelName >> modes;
 
     if (command.empty() || modes.empty())
     {
@@ -580,44 +628,80 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
         LOG_ERROR(operatorClient.getNickName() << " Is Not An Operator On This Channel");
         return false;
     }
-    // if (!channel || !channel->isOperator(&operatorClient)) {
-    //     operatorClient.sendReply(482, operatorClient);
-    //     return false;
-    // }
+    size_t paramsInc = 0;
     for (size_t i = 0; i < modes.length(); ++i) {
         char mode = modes[i];
         switch (mode) {
             case 'i': // Invite-only
-                if (modes[0] == '+')
+                if (modes[0] == '+' && !channel->isInviteOnly()) {
+                    sendModeIRepleyToChannel(operatorClient, *channel, 1);
                     channel->setInviteOnly(1);
-                else
+                }
+                else if (modes[0] == '-' && channel->isInviteOnly()) {
+                    sendModeIRepleyToChannel(operatorClient, *channel, 0);
                     channel->setInviteOnly(0);
-                break;
+                }
+                break ;
             case 't': // Topic restriction
-                std::cout << "Mode Seted to t"<< std::endl;
-                break;
+                std::cout << "mode T to " << modes[0];
+                if(paramsInc < params.size())
+                    std::cout << params[paramsInc++] << std::endl;
+                else
+                    std::cout << "empty" << std::endl;
+                break ;
             case 'k': // Channel key
-                if (ss >> param) {
-                    std::cout << "Mode Seted to k"<< std::endl;
-                }
-                break;
+                std::cout << "mode K to " << modes[0];
+                if(paramsInc < params.size())
+                    std::cout << params[paramsInc++] << std::endl;
+                else
+                    std::cout << "empty" << std::endl;
+                break ;
             case 'o': // Operator
-                std::cout << "Mode Seted to o" << std::endl;
-                // if (ss >> param) {
-                //     Client* targetClient = getClientByNick(param);
-                //     if (targetClient) {
-                //         channel->addOperator(targetClient);
-                //     }
-                // }
-                break;
+                std::cout << "mode O to " << modes[0];
+                if(paramsInc < params.size())
+                    std::cout << params[paramsInc++] << std::endl;
+                else
+                    std::cout << "empty" << std::endl;
+                break ;
             case 'l': // User limit
-                if (ss >> param) {
-                    // int limit = std::stoi(param);
-                    std::cout << "Mode Seted to l"<< std::endl;
-                }
-                break;
+                std::cout << "mode L" << std::endl;
+                break ;
         }
     }
+    // for (size_t i = 0; i < modes.length(); ++i) {
+    //     char mode = modes[i];
+    //     switch (mode) {
+    //         case 'i': // Invite-only
+    //             if (modes[0] == '+')
+    //                 channel->setInviteOnly(1);
+    //             else
+    //                 channel->setInviteOnly(0);
+    //             break;
+    //         case 't': // Topic restriction
+    //             std::cout << "Mode Seted to t"<< std::endl;
+    //             break;
+    //         case 'k': // Channel key
+    //             if (ss >> param) {
+    //                 std::cout << "Mode Seted to k"<< std::endl;
+    //             }
+    //             break;
+    //         case 'o': // Operator
+    //             std::cout << "Mode Seted to o" << std::endl;
+    //             // if (ss >> param) {
+    //             //     Client* targetClient = getClientByNick(param);
+    //             //     if (targetClient) {
+    //             //         channel->addOperator(targetClient);
+    //             //     }
+    //             // }
+    //             break;
+    //         case 'l': // User limit
+    //             if (ss >> param) {
+    //                 // int limit = std::stoi(param);
+    //                 std::cout << "Mode Seted to l"<< std::endl;
+    //             }
+    //             break;
+    //     }
+    // }
     return true;
 }
 
@@ -696,12 +780,19 @@ bool Server::joinChannel(Client &client, const std::string &channelName) { // th
         //     LOG_INFO("already a memeber "<< client.getNickName());
         //     return
         // }
+        if (channel->isKeyProtected())
+        {
+            LOG_ERROR(channelName << " is protected (you need a key/password)");
+            return false;
+        }
         if (channel->isInviteOnly())
         {
             if (channel->getInvitedUsers().find(client.getNickName()) != channel->getInvitedUsers().end())
             {
                 LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
                 channel->addMember(&client);
+                if (!channel->getTopic().empty())
+                    client.RPL_TOPIC(client, channel->getTopicSetter() ,channel->getTopic(), channel->getName());// rpl for topic
                 channel->removeInvitedUser(&client);
                 return true;
             }
@@ -711,6 +802,8 @@ bool Server::joinChannel(Client &client, const std::string &channelName) { // th
         }
         if (channel->getMembers().size() <= 0) // if the channel doesn't exists the first user joined it must be the operator
             channel->addOperator(&client);
+        if (!channel->getTopic().empty())
+            client.RPL_TOPIC(client, channel->getTopicSetter() ,channel->getTopic(), channel->getName()); //rpl for topic
         channel->addMember(&client);
         //client.sendReply(331, client);  // Send a welcome message or similar notification
         LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
@@ -755,9 +848,10 @@ bool Server::processJoinCommand(Client &client, const std::string &message) {
             client.ERR_NEEDMOREPARAMS(client, "JOIN");  // Send ERR_NEEDMOREPARAMS if no channel specified
             return false;
         }
-
         removeCarriageReturn(channelName);
         if (joinChannel(client, channelName)){
+
+            // sendJoinedRepleyToChannel(client, *channel, client.getNickName());
             client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome
             return true;
         }

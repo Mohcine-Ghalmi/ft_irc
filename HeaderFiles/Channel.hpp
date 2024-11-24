@@ -9,6 +9,7 @@ class Channel {
     private:
         std::string name;
         std::string topic;
+        std::string topicSetter;
         std::map<std::string, Client> members;       // A set of pointers to clients in this channel
         std::map<std::string, Client> operators;     // Channel operators
         std::map<std::string, Client> invitedUsers;     // Channel invited users
@@ -27,6 +28,7 @@ class Channel {
         // Basic getter/setter functions
         const std::string& getName() const;
         const std::string& getTopic() const;
+        const std::string& getTopicSetter() const;
         bool isInviteOnly() const;
         bool isTopicRestricted() const;
         bool hasUserLimit() const;
@@ -35,6 +37,7 @@ class Channel {
         bool isOperator(Client* client) const;
 
         void setTopic(const std::string &newTopic);
+        void setTopicSetter(const std::string &newTopicSetter);
         void addOperator(Client* client);
         void removeOperator(Client* client);
         void addMember(Client* client);

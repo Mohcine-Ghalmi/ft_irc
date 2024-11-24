@@ -76,10 +76,11 @@ void Client::ERR_NOSUCHNICKINCHANNEL(Client &client, const std::string &targetNi
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-void Client::RPL_TOPIC(Client &client, const std::string &topic, const std::string &channelName) {
+
+void Client::RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName) {
     std::stringstream ss;
 
-    ss << ":" << client.getNickName() << " TOPIC " << channelName
+    ss << ":" << setterName << " TOPIC " << channelName
        << " :" << topic << "\r\n";
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
