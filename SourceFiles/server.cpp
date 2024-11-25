@@ -642,64 +642,12 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                     LOG_ERROR("User Not Found");
                     break;
                 }
-                if (paramsInc < params.size() && modes[0] == '+')
-                {
-                    if (channel->getOperators().find(newOperator->getNickName()) == channel->getOperators().end())
-                    {
-                        newOperator->RPL_NEWOPERATOR(*newOperator, channelName, operatorClient, false);
-                        channel->addOperator(newOperator);
-                    }
-                    else
-                        operatorClient.RPL_ALREADYOPERATOR(operatorClient, channelName, newOperator->getNickName(), true);
-                }
-                else if (paramsInc < params.size() && modes[0] == '-')
-                {
-                    if (channel->getOperators().find(newOperator->getNickName()) != channel->getOperators().end())
-                    {
-                        newOperator->RPL_NEWOPERATOR(*newOperator, channelName, operatorClient, true);
-                        channel->removeOperator(newOperator);
-                    }
-                    else
-                        operatorClient.RPL_ALREADYOPERATOR(operatorClient, channelName, newOperator->getNickName(), false);
-                }
+                if (paramsInc < params.size() && (modes[0] == '+' || modes[0] == '-'))
+                    ft_removeAddOperator(operatorClient, newOperator, channel, modes[0]);
                 paramsInc++;
                 break ;
         }
     }
-    // for (size_t i = 0; i < modes.length(); ++i) {
-    //     char mode = modes[i];
-    //     switch (mode) {
-    //         case 'i': // Invite-only
-    //             if (modes[0] == '+')
-    //                 channel->setInviteOnly(1);
-    //             else
-    //                 channel->setInviteOnly(0);
-    //             break;
-    //         case 't': // Topic restriction
-    //             std::cout << "Mode Seted to t"<< std::endl;
-    //             break;
-    //         case 'k': // Channel key
-    //             if (ss >> param) {
-    //                 std::cout << "Mode Seted to k"<< std::endl;
-    //             }
-    //             break;
-    //         case 'o': // Operator
-    //             std::cout << "Mode Seted to o" << std::endl;
-    //             // if (ss >> param) {
-    //             //     Client* targetClient = getClientByNick(param);
-    //             //     if (targetClient) {
-    //             //         channel->addOperator(targetClient);
-    //             //     }
-    //             // }
-    //             break;
-    //         case 'l': // User limit
-    //             if (ss >> param) {
-    //                 // int limit = std::stoi(param);
-    //                 std::cout << "Mode Seted to l"<< std::endl;
-    //             }
-    //             break;
-    //     }
-    // }
     return true;
 }
 
