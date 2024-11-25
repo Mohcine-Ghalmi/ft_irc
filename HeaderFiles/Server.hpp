@@ -7,6 +7,7 @@
 #include <iostream>
 #include "Replies.hpp"
 #include "../HeaderFiles/Channel.hpp"
+#include <sstream>
 class Channel;
 class Server {
     private:
@@ -56,3 +57,5 @@ class Server {
         // helpers
         bool proccessCommandHelper(std::string cmd, std::string dif);
 };
+
+void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode);

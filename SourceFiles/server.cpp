@@ -1,6 +1,6 @@
 #include "../HeaderFiles/Server.hpp"
 #include <typeinfo>
-#include <sstream>
+
 
 bool Server::proccessCommandHelper(std::string cmd, std::string dif) {
     unsigned long pos = cmd.find(" ");
@@ -404,7 +404,7 @@ void sendInviteReply(Client operatorClient,Channel &channel, const std::string &
 
 void sendkickRepleyToChannel(Client operatorClient,Channel &channel, const std::string &kickedUser) {
     std::stringstream ss3;
-    ss3 << ":" << operatorClient.getHostname()
+    ss3 << ":" << operatorClient.getNickName()
         << " NOTICE " << channel.getName()
         << " :" << "Kicked " << kickedUser << "\r\n";
 
@@ -438,22 +438,6 @@ void sendJoinedRepleyToChannel(Client operatorClient,Channel &channel, const std
         send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
     }
 }
-
-void sendModeIRepleyToChannel(Client &client, Channel &channel, bool inviteOnly) {
-    std::stringstream ss;
-
-    ss << ":" << " NOTICE " << channel.getName()
-       << " :" << client.getNickName() << " This Channel is "
-       << (inviteOnly ? "Private" : "Public")
-       <<".\r\n";
-
-    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
-        Client targetClient = it->second;
-        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    }
-}
-
-
 
 #include <sstream>
 #include <string>
@@ -531,21 +515,22 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
     std::istringstream ss(message);
     std::string command, channelName, topic;
     ss >> command >> channelName;
-    topic = ss.str().substr(ss.str().find(":") + 1, ss.str().length());
+    if (ss.str().find(":") != std::string::npos)
+        topic = ss.str().substr(ss.str().find(":") + 1, ss.str().length());
     Channel *channel = getChannel(channelName);
-    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end()) {
+    if (channel && channel->isTopicRestricted() && channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end()) {
         operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
         LOG_ERROR(operatorClient.getNickName() << " is not an operator on this channel");
         return false;
     }
-    if (!topic.empty())
-    {
+    removeCarriageReturn(topic);
+    if (topic.empty())
+        return false;
+    else {
         channel->setTopic(topic);
         channel->setTopicSetter(operatorClient.getNickName());
         sendTopicRepleyToChannel(operatorClient, *channel, topic);
         LOG_MSG("the topic of " << channelName << " was changed to " << topic);
-    }else {
-        LOG_MSG("Topic : " << channel->getTopic());
     }
     return true;
 }
@@ -633,53 +618,35 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
         char mode = modes[i];
         switch (mode) {
             case 'i': // Invite-only
-                if (modes[0] == '+' && !channel->isInviteOnly()) {
-                    sendModeIRepleyToChannel(operatorClient, *channel, 1);
-                    channel->setInviteOnly(1);
-                }
-                else if (modes[0] == '-' && channel->isInviteOnly()) {
-                    sendModeIRepleyToChannel(operatorClient, *channel, 0);
-                    channel->setInviteOnly(0);
-                }
+                ft_setInviteOnly(channel, operatorClient, modes[0]);
                 break ;
             case 't': // Topic restriction
-                std::cout << "mode T to " << modes[0];
-                if (paramsInc < params.size())
-                    std::cout << params[paramsInc++] << std::endl;
-                else
-                    std::cout << "empty" << std::endl;
+                channel->setTopicRestriction((modes[0] == '+' ? 1 : 0));
                 break ;
             case 'k': // Channel key
                 if (paramsInc < params.size() && modes[0] == '+')
-                {
-                    removeCarriageReturn(params[paramsInc]);
                     channel->setKeyProtection(1, params[paramsInc++]);
-                    std::cout << "channel->getKey() : " << channel->getKey() << std::endl;
-                    // std::cout << params[paramsInc++] << std::endl;
-                }
                 else if (paramsInc < params.size() && modes[0] == '-')
-                {
                     channel->setKeyProtection(0, "");
-                }
-                else
-                    std::cout << "empty" << std::endl;
                 break ;
             case 'o': // Operator
+                if (params.size() == 0) {
+                    LOG_ERROR("Param required");
+                    return false;
+                }
+                removeCarriageReturn(params[paramsInc]);
                 newOperator = getClientByNick(params[paramsInc]);
                 if (!newOperator) {
-                    LOG_ERROR("user not found");
-                    break ;
+                    operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, params[paramsInc], channelName);//user doesn't exist
+                    paramsInc++;
+                    LOG_ERROR("User Not Found");
+                    break;
                 }
                 if (paramsInc < params.size() && modes[0] == '+')
                     channel->addOperator(newOperator);
                 else if (paramsInc < params.size() && modes[0] == '-')
                     channel->removeOperator(newOperator);
-                else
-                    std::cout << "empty" << std::endl;
                 paramsInc++;
-                break ;
-            case 'l': // User limit
-                std::cout << "mode L" << std::endl;
                 break ;
         }
     }
