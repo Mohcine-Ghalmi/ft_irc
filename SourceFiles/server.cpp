@@ -644,11 +644,24 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 }
                 if (paramsInc < params.size() && modes[0] == '+')
                 {
-                    newOperator->RPL_NEWOPERATOR(*newOperator, channelName, operatorClient);
-                    channel->addOperator(newOperator);
+                    if (channel->getOperators().find(newOperator->getNickName()) == channel->getOperators().end())
+                    {
+                        newOperator->RPL_NEWOPERATOR(*newOperator, channelName, operatorClient, false);
+                        channel->addOperator(newOperator);
+                    }
+                    else
+                        operatorClient.RPL_ALREADYOPERATOR(operatorClient, channelName, newOperator->getNickName(), true);
                 }
                 else if (paramsInc < params.size() && modes[0] == '-')
-                    channel->removeOperator(newOperator);
+                {
+                    if (channel->getOperators().find(newOperator->getNickName()) != channel->getOperators().end())
+                    {
+                        newOperator->RPL_NEWOPERATOR(*newOperator, channelName, operatorClient, true);
+                        channel->removeOperator(newOperator);
+                    }
+                    else
+                        operatorClient.RPL_ALREADYOPERATOR(operatorClient, channelName, newOperator->getNickName(), false);
+                }
                 paramsInc++;
                 break ;
         }

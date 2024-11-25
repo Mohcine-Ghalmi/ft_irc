@@ -170,6 +170,56 @@ void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
+
+void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator,const bool &isOperator) {
+    std::stringstream ss;
+
+    ss << ":"
+        << " NOTICE " << channelName
+        << " :"
+        << newOperator
+        << (isOperator ? " is already an operator for " : " is not an operator for ") << channelName << "\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName, Client &oldOperator,const bool &remove) {
+    std::stringstream ss;
+
+    if (!remove) {
+        // Notify the new operator
+        ss << ":"
+        << " NOTICE " << channelName
+        << " :You are now an operator for channel " << channelName << "\r\n";
+        send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+
+        ss.str(""); // Clear the stringstream for reuse
+        ss.clear();
+
+        // Notify the channel about the new operator
+        ss << ":" << oldOperator.getNickName()
+        << " NOTICE " << channelName
+        << " :" << newOperator.getNickName() << " has been added as an operator for this channel\r\n";
+        send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+        return ;
+    }
+    else {
+        // Notify the new operator
+        ss << ":"
+        << " NOTICE " << channelName
+        << " :You where removed from operators list in " << channelName << "\r\n";
+        send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+
+        ss.str(""); // Clear the stringstream for reuse
+        ss.clear();
+
+        // Notify the channel about the new operator
+        ss << ":" << oldOperator.getNickName()
+        << " NOTICE " << channelName
+        << " :" << newOperator.getNickName() << " has been removed as an operator for this channel\r\n";
+        send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    }
+}
 void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
     std::stringstream ss;
 
@@ -179,26 +229,6 @@ void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
-
-void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName, Client &oldOperator) {
-    std::stringstream ss;
-
-    // Notify the new operator
-    ss << ":"
-       << " NOTICE " << channelName
-       << " :You are now an operator for channel " << channelName << "\r\n";
-    send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-
-    ss.str(""); // Clear the stringstream for reuse
-    ss.clear();
-
-    // Notify the channel about the new operator
-    ss << ":" << oldOperator.getNickName()
-       << " NOTICE " << channelName
-       << " :" << newOperator.getNickName() << " has been added as an operator for this channel\r\n";
-    send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-}
-
 
 void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &operatorClient, std::string &reason) {
     std::stringstream ss;
