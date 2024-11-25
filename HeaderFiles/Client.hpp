@@ -91,4 +91,5 @@ class Client{
         void RPL_CANTKICKSELF(Client &client, const std::string &channelName);
         void RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName);
         void ERR_BADCHANNELKEY(Client &client, const std::string &channelName);
+        void RPL_NEWOPERATOR(Client &client, const std::string &channelName,Client &oldOperator);
 };

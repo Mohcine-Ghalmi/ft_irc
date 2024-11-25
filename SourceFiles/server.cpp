@@ -643,7 +643,10 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                     break;
                 }
                 if (paramsInc < params.size() && modes[0] == '+')
+                {
+                    newOperator->RPL_NEWOPERATOR(*newOperator, channelName, operatorClient);
                     channel->addOperator(newOperator);
+                }
                 else if (paramsInc < params.size() && modes[0] == '-')
                     channel->removeOperator(newOperator);
                 paramsInc++;
