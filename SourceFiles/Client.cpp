@@ -187,9 +187,8 @@ void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName,
     //    << " 700 " << client.getNickName()
     //    << " " << channelName
     //    << " :" << newOperator << " is already an operator for this channel.\r\n";
-    ss << ":" << client.getHostname()
-       << " 700 " << client.getNickName()
-       << " " << channelName
+    ss << ":" << client.getNickName()
+       << " 700 " << channelName
         << " :"
         << newOperator
         << (isOperator ? " is already an operator for " : " is not an operator for ") << channelName << "\r\n";
@@ -244,8 +243,8 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName
 
     if (!remove) {
         // Notify the new operator
-        ss << ":"
-        << " NOTICE " << channelName
+        ss << ":" << newOperator.getNickName()
+        << " 710 " << channelName
         << " :You are now an operator for channel " << channelName << "\r\n";
         send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 
@@ -254,15 +253,15 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName
 
         // Notify the channel about the new operator
         ss << ":" << oldOperator.getNickName()
-        << " NOTICE " << channelName
+        << " 711 " << channelName
         << " :" << newOperator.getNickName() << " has been added as an operator for this channel\r\n";
         send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
         return ;
     }
     else {
         // Notify the new operator
-        ss << ":"
-        << " NOTICE " << channelName
+        ss << ":" << newOperator.getNickName()
+        << " 712 " << channelName
         << " :You where removed from operators list in " << channelName << "\r\n";
         send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 
@@ -271,7 +270,7 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName
 
         // Notify the channel about the new operator
         ss << ":" << oldOperator.getNickName()
-        << " NOTICE " << channelName
+        << " 713 " << channelName
         << " :" << newOperator.getNickName() << " has been removed as an operator for this channel\r\n";
         send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
     }
