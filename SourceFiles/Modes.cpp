@@ -3,10 +3,11 @@
 void sendModeIRepleyToChannel(Client &client, Channel &channel, bool inviteOnly) {
     std::stringstream ss;
 
-    ss << ":" << " NOTICE " << channel.getName()
-       << " :" << client.getNickName() << " This Channel is "
-       << (inviteOnly ? "Private" : "Public")
-       <<".\r\n";
+    ss << ":" << client.getNickName()
+        << " 703 " << channel.getName()
+        << " :" << " This Channel is "
+        << (inviteOnly ? "Private" : "Public")
+        <<".\r\n";
 
     for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
         Client targetClient = it->second;

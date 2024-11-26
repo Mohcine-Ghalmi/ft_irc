@@ -375,12 +375,6 @@ bool Server::checkInvitesToChannel(Client &operatorClient, Channel *channel, std
         LOG_ERROR("Channel Not Found");
         return false;
     }
-    if (!channel->isInviteOnly())
-    {
-        operatorClient.ERR_INVITEONLYCHAN(operatorClient, channelName);
-        LOG_ERROR("Channel is not invite-only");
-        return false;
-    }
     if (channel->getMembers().find(userInvited->getNickName()) != channel->getMembers().end())
     {
         operatorClient.ERR_USERONCHANNEL(operatorClient, userInvited->getNickName(), channelName);
@@ -391,7 +385,7 @@ bool Server::checkInvitesToChannel(Client &operatorClient, Channel *channel, std
 }
 
 void sendInviteReply(Client operatorClient,Channel &channel, const std::string &invited) {
-    std::string message = ":" + operatorClient.getHostname() +
+    std::string message = ":" + operatorClient.getNickName() +
                           " INVITE " + invited +
                           " :" + channel.getName() + "\r\n";
 
@@ -405,7 +399,7 @@ void sendInviteReply(Client operatorClient,Channel &channel, const std::string &
 void sendkickRepleyToChannel(Client operatorClient,Channel &channel, const std::string &kickedUser) {
     std::stringstream ss3;
     ss3 << ":" << operatorClient.getNickName()
-        << " NOTICE " << channel.getName()
+        << " 703 " << channel.getName()
         << " :" << "Kicked " << kickedUser << "\r\n";
 
 
@@ -474,12 +468,7 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
         // Extract the reason from the message
         reason = ss.str().substr(ss.str().find(":"), ss.str().length());
 
-        // Validate and process the KICK command
-        if (user == operatorClient.getNickName()) {
-            operatorClient.RPL_CANTKICKSELF(operatorClient, channelName);
-            LOG_ERROR("You can't KICK yourself from a channel");
-            continue;
-        }
+
 
         Channel *channel = getChannel(channelName);
         if (!channel) {
@@ -491,6 +480,13 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
         if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end()) {
             operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
             LOG_ERROR(operatorClient.getNickName() << " is not an operator on this channel");
+            continue;
+        }
+
+        // Validate and process the KICK command
+        if (user == operatorClient.getNickName()) {
+            operatorClient.RPL_CANTKICKSELF(operatorClient, channelName);
+            LOG_ERROR("You can't KICK yourself from a channel");
             continue;
         }
 
@@ -527,6 +523,8 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
     if (topic.empty())
         return false;
     else {
+        if (channel->getTopic() == topic)
+            return true;
         channel->setTopic(topic);
         channel->setTopicSetter(operatorClient.getNickName());
         sendTopicRepleyToChannel(operatorClient, *channel, topic);
@@ -560,7 +558,7 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
         channel->addInvitedUser(invitedClient);
     // operatorClient.RPL_INVITE(operatorClient, userInvited, channelName);
     sendInviteReply(operatorClient, *channel, userInvited);
-    invitedClient->RPL_INVITESENTTO(*invitedClient, channelName, userInvited);
+    invitedClient->RPL_INVITESENTTO(*invitedClient, channelName, operatorClient.getNickName());
     return true;
 }
 
@@ -736,7 +734,7 @@ bool Server::joinChannel(Client &client, const std::string &channelName,const st
                 LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
                 channel->addMember(&client);
                 if (!channel->getTopic().empty())
-                    client.RPL_TOPIC(client, channel->getTopicSetter() ,channel->getTopic(), channel->getName());// rpl for topic
+                    client.RPL_TOPIC(client, channel->getName(),channel->getTopicSetter());// rpl for topic
                 channel->removeInvitedUser(&client);
                 return true;
             }
@@ -747,7 +745,7 @@ bool Server::joinChannel(Client &client, const std::string &channelName,const st
         if (channel->getMembers().size() <= 0) // if the channel doesn't exists the first user joined it must be the operator
             channel->addOperator(&client);
         if (!channel->getTopic().empty())
-            client.RPL_TOPIC(client, channel->getTopicSetter() ,channel->getTopic(), channel->getName()); //rpl for topic
+            client.RPL_TOPIC(client, channel->getName(),channel->getTopicSetter()); //rpl for topic
         channel->addMember(&client);
         //client.sendReply(331, client);  // Send a welcome message or similar notification
         LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());

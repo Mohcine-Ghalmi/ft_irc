@@ -80,7 +80,7 @@ void Client::ERR_BADCHANNELKEY(Client &client, const std::string &channelName) {
     std::stringstream ss;
 
     // Constructing the error message according to the IRC protocol
-    ss << ":" << "IRCServer" // Replace with your server name
+    ss << ":" << client.getHostname()
        << " 475 " << client.getNickName()
        << " " << channelName
        << " :Cannot join channel (+k)\r\n";
@@ -91,14 +91,24 @@ void Client::ERR_BADCHANNELKEY(Client &client, const std::string &channelName) {
 
 
 
-void Client::RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName) {
+// void Client::RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName) {
+//     std::stringstream ss;
+
+//     ss << "332 " << setterName << " " << channelName << " :" << topic;
+
+//     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+// }
+
+void Client::RPL_TOPIC(Client &client, const std::string &channelName, const std::string &topic) {
     std::stringstream ss;
 
-    ss << "332 " << setterName << " " << channelName << " :" << topic;
+    ss << ":" << client.getHostname()
+       << " 332 " << client.getNickName()
+       << " " << channelName
+       << " :" << topic << "\r\n";
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
-
 
 void Client::ERR_ERRONEUSNICKNAME(Client &client, const std::string &invalidNick) {
     std::stringstream ss;
@@ -135,13 +145,11 @@ void Client::RPL_INVITE(Client &client, const std::string &invitedUser, const st
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-
-
 void Client::ERR_INVITEONLYCHAN(Client &client, const std::string &channel) {
     std::stringstream ss;
 
-    ss << ":" << client.getHostname()
-       << " 473 " << client.getNickName()
+    ss << ":" << client.getNickName()
+       << " 473 " << channel
        << " " << channel
        << " :Cannot join channel (+i)\r\n";
 
@@ -165,23 +173,71 @@ void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName
     std::stringstream ss;
 
     ss << ":" << client.getHostname()
-        << " 443 " << channelName
+        << " 482 " << channelName
         << " :You're not channel operator\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
 
-void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator,const bool &isOperator) {
+// Custom Replies (using 600+ range)
+void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator) {
     std::stringstream ss;
 
-    ss << ":"
-        << " NOTICE " << channelName
+    // ss << ":" << client.getHostname()
+    //    << " 700 " << client.getNickName()
+    //    << " " << channelName
+    //    << " :" << newOperator << " is already an operator for this channel.\r\n";
+    ss << ":" << client.getHostname()
+       << " 700 " << client.getNickName()
+       << " " << channelName
         << " :"
         << newOperator
         << (isOperator ? " is already an operator for " : " is not an operator for ") << channelName << "\r\n";
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
+
+void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName()
+       << " 701 " << channelName
+       << " :You cannot kick yourself.\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+// void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
+//     std::stringstream ss;
+
+//     ss << ":" << client.getNickName()
+//        << " NOTICE " << channelName
+//        << " :You cannot kick yourself.\r\n";
+
+//     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+// }
+
+void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, const std::string &userInvited) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName()
+       << " 702 " << client.getNickName()
+       << " " << ":You where invited to " << channelName << " by " << userInvited << "\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+// void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator,const bool &isOperator) {
+//     std::stringstream ss;
+
+//     ss << ":"
+//         << " NOTICE " << channelName
+//         << " :"
+//         << newOperator
+//         << (isOperator ? " is already an operator for " : " is not an operator for ") << channelName << "\r\n";
+
+//     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+// }
 
 void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName, Client &oldOperator,const bool &remove) {
     std::stringstream ss;
@@ -220,15 +276,6 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName
         send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
     }
 }
-void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
-    std::stringstream ss;
-
-    ss << ":" << client.getNickName()
-       << " NOTICE " << channelName
-       << " :You cannot kick yourself.\r\n";
-
-    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-}
 
 void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &operatorClient, std::string &reason) {
     std::stringstream ss;
@@ -251,15 +298,15 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &
     // to send a replie to the operator that the user was kicked
 }
 
-void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, std::string &userInvited) {
-    std::stringstream ss;
+// void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, std::string &userInvited) {
+//     std::stringstream ss;
 
-    ss << ":" << client.getHostname()
-        << " 701 " << userInvited
-        << " :You Where Invited To "
-        << channelName << "\r\n";
-    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-}
+//     ss << ":" << client.getHostname()
+//         << " 701 " << userInvited
+//         << " :You Where Invited To "
+//         << channelName << "\r\n";
+//     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+// }
 
 // void Client::MODE_NOTIFY(const std::string &channelName, const std::string &modeChange, const std::string &target, const std::vector<Client *> &channelClients) {
 //     std::stringstream ss;
