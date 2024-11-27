@@ -375,6 +375,12 @@ bool Server::checkInvitesToChannel(Client &operatorClient, Channel *channel, std
         LOG_ERROR("Channel Not Found");
         return false;
     }
+    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end())
+    {
+        operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
+        LOG_ERROR(operatorClient.getNickName() << " is not an operator on this channel");
+        return false;
+    }
     if (channel->getMembers().find(userInvited->getNickName()) != channel->getMembers().end())
     {
         operatorClient.ERR_USERONCHANNEL(operatorClient, userInvited->getNickName(), channelName);
@@ -548,17 +554,23 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
     Channel *channel = getChannel(channelName);
     Client *invitedClient = getClientByNick(userInvited);
     if (!invitedClient) {
-        operatorClient.ERR_NOSUCHNICK(operatorClient, userInvited);//user doesn't exist
+        operatorClient.ERR_NOSUCHNICK(operatorClient, userInvited);//user doesn't exi, ""st
         LOG_ERROR("User Not Found");
         return false;
     }
     if (!checkInvitesToChannel(operatorClient, channel, channelName, invitedClient))
         return false;
-    if (channel->isInviteOnly())
+    // if ()
+    if (channel->isInviteOnly() && channel->getInvitedUsers().find(invitedClient->getNickName()) == channel->getInvitedUsers().end()) {
         channel->addInvitedUser(invitedClient);
-    // operatorClient.RPL_INVITE(operatorClient, userInvited, channelName);
-    sendInviteReply(operatorClient, *channel, userInvited);
-    invitedClient->RPL_INVITESENTTO(*invitedClient, channelName, operatorClient.getNickName());
+        sendInviteReply(operatorClient, *channel, userInvited);
+        invitedClient->RPL_INVITESENTTO(*invitedClient, channelName, operatorClient.getNickName());
+    }
+    else {
+        //user already invited or this channel is public
+        operatorClient.RPL_PUBLICCHANNEL(operatorClient, channelName);
+        return false;
+    }
     return true;
 }
 
@@ -635,7 +647,7 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 removeCarriageReturn(params[paramsInc]);
                 newOperator = getClientByNick(params[paramsInc]);
                 if (!newOperator) {
-                    operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, params[paramsInc], channelName);//user doesn't exist
+                    operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, params[paramsInc], channelName);//use, ""r doesn't exist
                     paramsInc++;
                     LOG_ERROR("User Not Found");
                     break;

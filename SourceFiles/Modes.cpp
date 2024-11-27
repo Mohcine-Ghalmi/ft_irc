@@ -39,6 +39,11 @@ void    ft_removeAddOperator(Client &operatorClient, Client *newOperator, Channe
     {
         if (channel->getOperators().find(newOperator->getNickName()) != channel->getOperators().end())
         {
+            if (operatorClient.getNickName() == newOperator->getNickName())
+            {
+                operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), true);
+                return ;
+            }
             newOperator->RPL_NEWOPERATOR(*newOperator, channel->getName(), operatorClient, true);
             channel->removeOperator(newOperator);
         }

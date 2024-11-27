@@ -96,4 +96,5 @@ class Client{
         void RPL_NEWOPERATOR(Client &client, const std::string &channelName,Client &oldOperator,const bool &remove);
         // void RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator);
         void RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator);
+        void RPL_PUBLICCHANNEL(Client &client, const std::string &channelName);
 };

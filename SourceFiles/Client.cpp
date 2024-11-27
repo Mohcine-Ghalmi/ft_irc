@@ -70,9 +70,18 @@ void Client::ERR_NOSUCHNICK(Client &client,  const std::string &targetNick) {
 void Client::ERR_NOSUCHNICKINCHANNEL(Client &client, const std::string &targetNick, const std::string &channelName) {
     std::stringstream ss;
 
-    ss << ":" << " NOTICE " << channelName
-       << " :" << targetNick << " is not in this channel.\r\n";
+    ss << ":" << targetNick << " 721 " << channelName
+       << " :is not in this channel.\r\n";
 
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::RPL_PUBLICCHANNEL(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName()
+        << " 722 " << channelName
+        << " :this channel is public\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
@@ -282,7 +291,7 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &
     std::stringstream ss3;
 
     // this replie closes the window of the channel for the kicked user
-    ss << ":" << client.getHostname()
+    ss << ":" << client.getNickName()
         << " KICK " << channelName
         << " :" << client.getNickName() << "\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
