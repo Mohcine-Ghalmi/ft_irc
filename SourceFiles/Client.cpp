@@ -158,44 +158,91 @@ void Client::RPL_INVITE(Client &client, const std::string &invitedUser, const st
 void Client::RPL_NAMREPLY(Client &operatorClient, const std::string &channelName,
                            std::map<std::string, Client> &members,
                            std::map<std::string, Client> &operators) {
-    std::stringstream ss;
+        (void)operatorClient;
+        for (std::map<std::string, Client>::iterator memberIt = members.begin(); memberIt != members.end(); ++memberIt) {
+            Client &recipient = memberIt->second;
+            std::stringstream ss;
 
-    // Start the RPL_NAMREPLY message
-    ss << ":" << operatorClient.getNickName() << " 353 " << operatorClient.getNickName()
-       << " = " << channelName << " :";
+            // Start the RPL_NAMREPLY message for this specific client
+            ss << ":" << recipient.getNickName() << " 353 " << recipient.getNickName()
+            << " = " << channelName << " :";
 
-    // Use a set to ensure unique nicknames
-    std::set<std::string> uniqueUsers;
+            std::set<std::string> uniqueUsers;
 
-    // Add operators with @ prefix (loop through all operators)
-    for (std::map<std::string, Client>::iterator it = operators.begin(); it != operators.end(); ++it) {
-        const std::string &nickname = it->second.getNickName();
-        ss << "@" << nickname << " ";
-        uniqueUsers.insert(nickname);
+            // Add operators with @ prefix
+            for (std::map<std::string, Client>::iterator it = operators.begin(); it != operators.end(); ++it) {
+                const std::string &nickname = it->second.getNickName();
+                if (uniqueUsers.find(nickname) == uniqueUsers.end()) {
+                    ss << "@" << nickname << " ";
+                    uniqueUsers.insert(nickname);
+                }
+            }
+
+            // Add regular members (if not already listed as operators)
+            for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
+                const std::string &nickname = it->second.getNickName();
+                if (uniqueUsers.find(nickname) == uniqueUsers.end()) {
+                    ss << nickname << " ";
+                    uniqueUsers.insert(nickname);
+                }
+            }
+
+            ss << "\r\n"; // End the RPL_NAMREPLY message
+
+            // Send the RPL_NAMREPLY (353) to the recipient
+            send(recipient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+
+            // Send the RPL_ENDOFNAMES (366) to the recipient
+            std::stringstream endReply;
+            endReply << ":" << recipient.getNickName() << " 366 " << recipient.getNickName()
+                    << " " << channelName << " :End of /NAMES list\r\n";
+
+            send(recipient.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
+
+            // Debugging output
+            std::cout << "Broadcasting to " << recipient.getNickName() << ":\n"
+                    << ss.str() << "\n" << endReply.str() << std::endl;
     }
+    // std::stringstream ss;
 
-    // Add regular members (if not already listed as operators)
-    for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
-        const std::string &nickname = it->second.getNickName();
-        if (operators.find(nickname) == operators.end()) { // Add only if not already an operator
-            ss << nickname << " ";
-            uniqueUsers.insert(nickname);
-        }
-    }
-    ss << "\r\n";  // End of the list
+    // // Start the RPL_NAMREPLY message
+    // ss << ":" << operatorClient.getNickName() << " 353 " << operatorClient.getNickName()
+    //    << " = " << channelName << " :";
 
-    // Send to all clients in the channel (broadcast it)
-    send(operatorClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-}
-    // for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
-    //     send(it->second.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    // // Use a set to ensure unique nicknames
+    // std::set<std::string> uniqueUsers;
+
+    // // Add operators with @ prefix (loop through all operators)
+    // for (std::map<std::string, Client>::iterator it = operators.begin(); it != operators.end(); ++it) {
+    //     const std::string &nickname = it->second.getNickName();
+    //     ss << "@" << nickname << " ";
+    //     uniqueUsers.insert(nickname);
     // }
 
-    // Send the RPL_ENDOFNAMES (366) message to operatorClient
+    // // Add regular members (if not already listed as operators)
+    // for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
+    //     const std::string &nickname = it->second.getNickName();
+    //     if (operators.find(nickname) == operators.end()) { // Add only if not already an operator
+    //         ss << nickname << " ";
+    //         uniqueUsers.insert(nickname);
+    //     }
+    // }
+    // ss << "\r\n";  // End of the list
+
+    // // Send to all clients in the channel (broadcast it)
+
+    // // send(operatorClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    // // Send the RPL_ENDOFNAMES (366) message to operatorClient
     // std::stringstream endReply;
     // endReply << ":" << operatorClient.getNickName() << " 366 " << operatorClient.getNickName()
     //          << " " << channelName << " :End of /NAMES list\r\n";
-    // send(operatorClient.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
+    // // send(operatorClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    // for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
+    //     send(it->second.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    //     send(it->second.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
+    // }
+}
+
 
 
 
