@@ -183,13 +183,21 @@ void Client::RPL_NAMREPLY(Client &operatorClient, const std::string &channelName
         }
     }
     ss << "\r\n";  // End of the list
+
+    // Send to all clients in the channel (broadcast it)
     send(operatorClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    // Send the RPL_ENDOFNAMES (366) message to operatorClient
-    std::stringstream endReply;
-    endReply << ":" << operatorClient.getNickName() << " 366 " << operatorClient.getNickName()
-             << " " << channelName << " :End of /NAMES list\r\n";
-    send(operatorClient.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
 }
+    // for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
+    //     send(it->second.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    // }
+
+    // Send the RPL_ENDOFNAMES (366) message to operatorClient
+    // std::stringstream endReply;
+    // endReply << ":" << operatorClient.getNickName() << " 366 " << operatorClient.getNickName()
+    //          << " " << channelName << " :End of /NAMES list\r\n";
+    // send(operatorClient.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
+
+
 
 
 

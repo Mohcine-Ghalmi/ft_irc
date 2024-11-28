@@ -25,31 +25,33 @@ void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode) {
 
 // this is for /mode +/- o
 void    ft_removeAddOperator(Client &operatorClient, Client *newOperator, Channel *channel, const char &adding) {
-    if (adding == '+')
-    {
-        if (channel->getOperators().find(newOperator->getNickName()) == channel->getOperators().end())
-        {
+    if (adding == '+') {
+        if (channel->getOperators().find(newOperator->getNickName()) == channel->getOperators().end()) {
+            // Add the new operator to the channel
             newOperator->RPL_NEWOPERATOR(*newOperator, channel->getName(), operatorClient, false);
             channel->addOperator(newOperator);
-            // operatorClient.RPL_NAMREPLY(operatorClient, channel->getName(), channel->getMembers(), channel->getOperators());
-        }
-        else
+
+            // Notify all members about the updated operator list
+            operatorClient.RPL_NAMREPLY(operatorClient, channel->getName(), channel->getMembers(), channel->getOperators());
+        } else {
             operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), true);
-    }
-    else
-    {
-        if (channel->getOperators().find(newOperator->getNickName()) != channel->getOperators().end())
-        {
-            if (operatorClient.getNickName() == newOperator->getNickName())
-            {
-                operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), true); // can't remove operator from self
+        }
+    } else if (adding == '-') {
+        if (channel->getOperators().find(newOperator->getNickName()) != channel->getOperators().end()) {
+            // Prevent the operator from removing themselves
+            if (operatorClient.getNickName() == newOperator->getNickName()) {
+                operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), true);
                 return ;
             }
+
+            // Remove the operator from the channel
             newOperator->RPL_NEWOPERATOR(*newOperator, channel->getName(), operatorClient, true);
             channel->removeOperator(newOperator);
-            // operatorClient.RPL_NAMREPLY(operatorClient, channel->getName(), channel->getMembers(), channel->getOperators());
-        }
-        else
+
+            // Notify all members about the updated operator list
+            operatorClient.RPL_NAMREPLY(operatorClient, channel->getName(), channel->getMembers(), channel->getOperators());
+        } else {
             operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), false);
+        }
     }
 }
