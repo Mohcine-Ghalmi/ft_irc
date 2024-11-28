@@ -76,12 +76,12 @@ void Client::ERR_NOSUCHNICKINCHANNEL(Client &client, const std::string &targetNi
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-void Client::RPL_PUBLICCHANNEL(Client &client, const std::string &channelName) {
+void Client::RPL_PUBLICCHANNEL(Client &client, const std::string &channelName, const bool &inviteOnly) {
     std::stringstream ss;
 
     ss << ":" << client.getNickName()
         << " 722 " << channelName
-        << " :this channel is public\r\n";
+        << (inviteOnly ? " :user already invited\r\n" : " :this channel is public\r\n");
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
@@ -252,9 +252,9 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName
 
     if (!remove) {
         // Notify the new operator
-        ss << ":" << newOperator.getNickName()
-        << " 710 " << channelName
-        << " :You are now an operator for channel " << channelName << "\r\n";
+        ss << ":" << oldOperator.getNickName()
+            << " MODE " << channelName
+            << " +o " << newOperator.getNickName() << " You are now an operator for this channel\r\n";
         send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 
         ss.str(""); // Clear the stringstream for reuse
@@ -262,16 +262,15 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName
 
         // Notify the channel about the new operator
         ss << ":" << oldOperator.getNickName()
-        << " 711 " << channelName
-        << " :" << newOperator.getNickName() << " has been added as an operator for this channel\r\n";
+        << " MODE " << channelName
+        << " +o " << newOperator.getNickName()  << " has been added as an operator for this channel\r\n";
         send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-        return ;
     }
     else {
         // Notify the new operator
-        ss << ":" << newOperator.getNickName()
-        << " 712 " << channelName
-        << " :You where removed from operators list in " << channelName << "\r\n";
+        ss << ":" << oldOperator.getNickName()
+            << " MODE " << channelName
+            << " -o " << newOperator.getNickName() << " You are no longer an operator for this channel\r\n";
         send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 
         ss.str(""); // Clear the stringstream for reuse
@@ -279,8 +278,8 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName
 
         // Notify the channel about the new operator
         ss << ":" << oldOperator.getNickName()
-        << " 713 " << channelName
-        << " :" << newOperator.getNickName() << " has been removed as an operator for this channel\r\n";
+        << " MODE " << channelName
+        << " -o " << newOperator.getNickName() << " has been removed as an operator for this channel\r\n";
         send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
     }
 }

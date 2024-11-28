@@ -309,22 +309,33 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
     Channel* channel = getChannel(channelName);
     if (!channel) {
         LOG_SERVER("channel doesn't exist");
-        sender.ERR_NOSUCHCHANNEL(sender, channelName);//channel doesn't exist
-        // sender.sendReply(ERR_NOSUCHCHANNEL, channelName + " :No such channel");
+        sender.ERR_NOSUCHCHANNEL(sender, channelName);
         return;
     }
 
     if (!channel->isMember(&sender)) {
-        LOG_SERVER("client is not in teh channel");
-        // sender.sendReply(ERR_CANNOTSENDTOCHAN, channelName + " :Cannot send to channel");
+        LOG_SERVER("client is not in the channel");
         return;
     }
-    std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + channelName + " :" + messageText + "\r\n";
+     // Remove the leading ':'
+    std::string msg = (messageText[0] == ':') ? messageText.substr(1) : messageText;
+    // bool isOperator = (channel->getOperators().find(sender.getNickName()) != channel->getOperators().end());
+
+    // Construct the full IRC message format
+    std::stringstream formattedMessage;
+    formattedMessage << ":" << sender.getNickName()
+                     << " PRIVMSG " << channelName
+                     << " :" << msg << "\r\n";
+
+    // std::string operatorInfo = isOperator ? "MODE " + channelName + " +o " + sender.getNickName() + "\r\n" : "";
     for (std::map<std::string, Client>::iterator it =  channel->getMembers().begin(); it != channel->getMembers().end(); it++) {
         Client& targetClient = it->second;
-        std::cout << targetClient.getNickName() << std::endl;
-        if (targetClient.getNickName() != sender.getNickName())
-            send(targetClient.getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
+        if (targetClient.getNickName() != sender.getNickName()) {
+            send(targetClient.getSocket(), formattedMessage.str().c_str(), formattedMessage.str().length(), 0);
+            // if (!operatorInfo.empty()) {
+            //     send(targetClient.getSocket(), operatorInfo.c_str(), operatorInfo.length(), 0);
+            // }
+        }
     }
 }
 
@@ -568,7 +579,7 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
     }
     else {
         //user already invited or this channel is public
-        operatorClient.RPL_PUBLICCHANNEL(operatorClient, channelName);
+        operatorClient.RPL_PUBLICCHANNEL(operatorClient, channelName, channel->isInviteOnly());
         return false;
     }
     return true;
@@ -755,7 +766,11 @@ bool Server::joinChannel(Client &client, const std::string &channelName,const st
             return false;
         }
         if (channel->getMembers().size() <= 0) // if the channel doesn't exists the first user joined it must be the operator
+        {
             channel->addOperator(&client);
+            // std::string modeMessage = ":Server MODE " + channelName + " +o " + client.getNickName() + "\r\n";
+            // send(client.getSocket(), modeMessage.c_str(), modeMessage.length(), 0);
+        }
         if (!channel->getTopic().empty())
             client.RPL_TOPIC(client, channel->getName(),channel->getTopicSetter()); //rpl for topic
         channel->addMember(&client);
