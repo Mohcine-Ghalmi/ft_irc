@@ -663,9 +663,14 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                     LOG_ERROR("User Not Found");
                     break;
                 }
-                if (paramsInc < params.size() && (modes[0] == '+' || modes[0] == '-'))
-                    ft_removeAddOperator(operatorClient, newOperator, channel, modes[0]);
-                paramsInc++;
+                if (channel->getMembers().find(newOperator->getNickName()) != channel->getMembers().end()) {
+                    if (paramsInc < params.size() && (modes[0] == '+' || modes[0] == '-'))
+                        ft_removeAddOperator(operatorClient, newOperator, channel, modes[0]);
+                    paramsInc++;
+                } else {
+                    operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, newOperator->getNickName(), channelName);
+                    return false;
+                }
                 break ;
         }
     }
