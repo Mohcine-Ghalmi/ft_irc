@@ -31,6 +31,7 @@ void    ft_removeAddOperator(Client &operatorClient, Client *newOperator, Channe
         {
             newOperator->RPL_NEWOPERATOR(*newOperator, channel->getName(), operatorClient, false);
             channel->addOperator(newOperator);
+            // operatorClient.RPL_NAMREPLY(operatorClient, channel->getName(), channel->getMembers(), channel->getOperators());
         }
         else
             operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), true);
@@ -41,11 +42,12 @@ void    ft_removeAddOperator(Client &operatorClient, Client *newOperator, Channe
         {
             if (operatorClient.getNickName() == newOperator->getNickName())
             {
-                operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), true);
+                operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), true); // can't remove operator from self
                 return ;
             }
             newOperator->RPL_NEWOPERATOR(*newOperator, channel->getName(), operatorClient, true);
             channel->removeOperator(newOperator);
+            // operatorClient.RPL_NAMREPLY(operatorClient, channel->getName(), channel->getMembers(), channel->getOperators());
         }
         else
             operatorClient.RPL_ALREADYOPERATOR(operatorClient, channel->getName(), newOperator->getNickName(), false);

@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include "Replies.hpp"
 #include <vector>
+#include <map>
 
 #define GREEN   "\033[32m"
 #define RED     "\033[31m"
@@ -97,4 +98,7 @@ class Client{
         // void RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator);
         void RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator);
         void RPL_PUBLICCHANNEL(Client &client, const std::string &channelName, const bool &inviteOnly);
+        void RPL_NAMREPLY(Client &operatorClient, const std::string &channelName,
+                                std::map<std::string, Client> &members,
+                                std::map<std::string, Client> &operators);
 };

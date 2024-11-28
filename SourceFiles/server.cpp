@@ -771,14 +771,11 @@ bool Server::joinChannel(Client &client, const std::string &channelName,const st
             return false;
         }
         if (channel->getMembers().size() <= 0) // if the channel doesn't exists the first user joined it must be the operator
-        {
             channel->addOperator(&client);
-            // std::string modeMessage = ":Server MODE " + channelName + " +o " + client.getNickName() + "\r\n";
-            // send(client.getSocket(), modeMessage.c_str(), modeMessage.length(), 0);
-        }
         if (!channel->getTopic().empty())
             client.RPL_TOPIC(client, channel->getName(),channel->getTopicSetter()); //rpl for topic
         channel->addMember(&client);
+        client.RPL_NAMREPLY(client, channel->getName(), channel->getMembers(), channel->getOperators());
         //client.sendReply(331, client);  // Send a welcome message or similar notification
         LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
         return true;
