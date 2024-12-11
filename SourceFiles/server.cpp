@@ -513,7 +513,7 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
             sendkickRepleyToChannel(operatorClient, *channel, user);
             clientKicked->RPL_KICKED(*clientKicked, channelName, operatorClient, reason);
         } else {
-            operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, user, channelName);
+            operatorClient.ERR_USERNOTINCHANNEL(operatorClient, user, channelName);
             LOG_ERROR("User " << user << " is not in channel: " << channelName);
         }
     }
@@ -610,70 +610,95 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
     (void)operatorClient;
     if (!this->proccessCommandHelper(message, "MODE"))
         return false;
+
     std::string channelName, modes;
     std::vector<std::string> params = parameters(message, modes, channelName);
     std::string command = "MODE";
-    // ss >> command >> channelName >> modes;
 
-    if (command.empty() || modes.empty())
-    {
+    if (command.empty() || modes.empty()) {
         operatorClient.ERR_NEEDMOREPARAMS(operatorClient, "MODE");
         return false;
     }
+
     Channel* channel = getChannel(channelName);
-    if (!channel)
-    {
-        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);//channel doesn't exist
+    if (!channel) {
+        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName); // Channel doesn't exist
         LOG_ERROR("Channel Not Found");
         return false;
     }
-    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end())
-    {
+
+    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end()) {
         operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
         LOG_ERROR(operatorClient.getNickName() << " Is Not An Operator On This Channel");
         return false;
     }
+
     size_t paramsInc = 0;
-    Client *newOperator;
+    Client *newOperator = nullptr;
+    char action = '+'; // Default action
+
     for (size_t i = 0; i < modes.length(); ++i) {
         char mode = modes[i];
+
+        // Update action when encountering '+' or '-'
+        if (mode == '+' || mode == '-') {
+            action = mode;
+            continue;
+        }
+
         switch (mode) {
             case 'i': // Invite-only
-                ft_setInviteOnly(channel, operatorClient, modes[0]);
-                break ;
+                ft_setInviteOnly(channel, operatorClient, action);
+                break;
+
             case 't': // Topic restriction
-                channel->setTopicRestriction((modes[0] == '+' ? 1 : 0));
-                break ;
+                channel->setTopicRestriction((action == '+') ? 1 : 0);
+                break;
+
             case 'k': // Channel key
-                if (paramsInc < params.size() && modes[0] == '+')
-                    channel->setKeyProtection(1, params[paramsInc++]);
-                else if (paramsInc < params.size() && modes[0] == '-')
-                    channel->setKeyProtection(0, "");
-                break ;
+                if (paramsInc < params.size()) {
+                    if (action == '+') {
+                        channel->setKeyProtection(1, params[paramsInc++]);
+                    } else if (action == '-') {
+                        channel->setKeyProtection(0, "");
+                    }
+                } else {
+                    LOG_ERROR("Key protection requires a parameter");
+                }
+                break;
+
             case 'o': // Operator
-                if (params.size() == 0) {
-                    LOG_ERROR("Param required");
+                if (paramsInc >= params.size()) {
+                    LOG_ERROR("Operator change requires a parameter");
                     return false;
                 }
+
                 removeCarriageReturn(params[paramsInc]);
                 newOperator = getClientByNick(params[paramsInc]);
+
                 if (!newOperator) {
-                    operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, params[paramsInc], channelName);//use, ""r doesn't exist
-                    paramsInc++;
+                    operatorClient.ERR_USERNOTINCHANNEL(operatorClient, params[paramsInc], channelName);
                     LOG_ERROR("User Not Found");
+                    paramsInc++;
                     break;
                 }
+
                 if (channel->getMembers().find(newOperator->getNickName()) != channel->getMembers().end()) {
-                    if (paramsInc < params.size() && (modes[0] == '+' || modes[0] == '-'))
-                        ft_removeAddOperator(operatorClient, newOperator, channel, modes[0]);
+                    ft_removeAddOperator(operatorClient, newOperator, channel, action);
                     paramsInc++;
                 } else {
-                    operatorClient.ERR_NOSUCHNICKINCHANNEL(operatorClient, newOperator->getNickName(), channelName);
+                    operatorClient.ERR_USERNOTINCHANNEL(operatorClient, newOperator->getNickName(), channelName);
                     return false;
                 }
-                break ;
+                break;
+
+            default:
+                LOG_ERROR("Unknown mode: " << mode);
+                operatorClient.ERR_UNKNOWNMODE(operatorClient ,channelName , mode);
+                break;
         }
     }
+
     return true;
 }
 

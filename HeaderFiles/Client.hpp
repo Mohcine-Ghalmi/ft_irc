@@ -89,16 +89,18 @@ class Client{
         // void RPL_INVITESENTTO(Client &client, const std::string &channelName,std::string &userInvited);
         void RPL_INVITESENTTO(Client &client, const std::string &channelName, const std::string &userInvited);
         void RPL_KICKED(Client &client, const std::string &channelName, Client &operatorName, std::string &reason);
-        void ERR_NOSUCHNICKINCHANNEL(Client &client,  const std::string &targetNick, const std::string &channelName);
+        void ERR_USERNOTINCHANNEL(Client &client,  const std::string &targetNick, const std::string &channelName);
         void RPL_CANTKICKSELF(Client &client, const std::string &channelName);
         // void RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName);
         void RPL_TOPIC(Client &client, const std::string &channelName, const std::string &topic);
         void ERR_BADCHANNELKEY(Client &client, const std::string &channelName);
-        void RPL_NEWOPERATOR(Client &client, const std::string &channelName,Client &oldOperator,const bool &remove);
+        void RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std::string &channelName, bool remove, std::map<std::string, Client> &members);
         // void RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator);
         void RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator);
         void RPL_PUBLICCHANNEL(Client &client, const std::string &channelName, const bool &inviteOnly);
         void RPL_NAMREPLY(Client &operatorClient, const std::string &channelName,
                                 std::map<std::string, Client> &members,
                                 std::map<std::string, Client> &operators);
+        void broadcastModeChange(const std::string &setterNick, const std::string &mode, const std::string &targetNick,  std::map<std::string, Client> &members,const std::string &channelName);
+        void ERR_UNKNOWNMODE(Client &client, const std::string &channelName, char modechar);
 };

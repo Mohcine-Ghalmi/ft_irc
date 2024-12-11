@@ -67,11 +67,11 @@ void Client::ERR_NOSUCHNICK(Client &client,  const std::string &targetNick) {
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-void Client::ERR_NOSUCHNICKINCHANNEL(Client &client, const std::string &targetNick, const std::string &channelName) {
+void Client::ERR_USERNOTINCHANNEL(Client &client, const std::string &targetNick, const std::string &channelName) {
     std::stringstream ss;
 
-    ss << ":" << targetNick << " 721 " << channelName
-       << " :is not in this channel.\r\n";
+    ss << ":" << targetNick << " 441 " << channelName
+       << " :They aren't on that channel\r\n";
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
@@ -155,98 +155,58 @@ void Client::RPL_INVITE(Client &client, const std::string &invitedUser, const st
 }
 
 #include <set>
-void Client::RPL_NAMREPLY(Client &operatorClient, const std::string &channelName,
-                           std::map<std::string, Client> &members,
-                           std::map<std::string, Client> &operators) {
-        (void)operatorClient;
-        for (std::map<std::string, Client>::iterator memberIt = members.begin(); memberIt != members.end(); ++memberIt) {
-            Client &recipient = memberIt->second;
-            std::stringstream ss;
+void Client::broadcastModeChange(const std::string &setterNick, const std::string &mode, const std::string &targetNick,  std::map<std::string, Client> &members, const std::string &channelName) {
+    std::stringstream ss;
+    ss << ":" << setterNick << " MODE " << channelName << " " << mode << " " << targetNick << "\r\n";
 
-            // Start the RPL_NAMREPLY message for this specific client
-            ss << ":" << recipient.getNickName() << " 353 " << recipient.getNickName()
-            << " = " << channelName << " :";
+    for (std::map<std::string, Client >::iterator it = members.begin(); it != members.end(); ++it) {
+        Client recipient = it->second;
+        send(recipient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 
-            std::set<std::string> uniqueUsers;
-
-            // Add operators with @ prefix
-            for (std::map<std::string, Client>::iterator it = operators.begin(); it != operators.end(); ++it) {
-                const std::string &nickname = it->second.getNickName();
-                if (uniqueUsers.find(nickname) == uniqueUsers.end()) {
-                    ss << "@" << nickname << " ";
-                    uniqueUsers.insert(nickname);
-                }
-            }
-
-            // Add regular members (if not already listed as operators)
-            for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
-                const std::string &nickname = it->second.getNickName();
-                if (uniqueUsers.find(nickname) == uniqueUsers.end()) {
-                    ss << nickname << " ";
-                    uniqueUsers.insert(nickname);
-                }
-            }
-
-            ss << "\r\n"; // End the RPL_NAMREPLY message
-
-            // Send the RPL_NAMREPLY (353) to the recipient
-            send(recipient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-
-            // Send the RPL_ENDOFNAMES (366) to the recipient
-            std::stringstream endReply;
-            endReply << ":" << recipient.getNickName() << " 366 " << recipient.getNickName()
-                    << " " << channelName << " :End of /NAMES list\r\n";
-
-            send(recipient.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
-
-            // Debugging output
-            std::cout << "Broadcasting to " << recipient.getNickName() << ":\n"
-                    << ss.str() << "\n" << endReply.str() << std::endl;
+        // Debugging output
+        // std::cout << "Sent mode change to " << recipient->getNickName() << ":\n"
+        //           << ss.str() << std::endl;
     }
-    // std::stringstream ss;
-
-    // // Start the RPL_NAMREPLY message
-    // ss << ":" << operatorClient.getNickName() << " 353 " << operatorClient.getNickName()
-    //    << " = " << channelName << " :";
-
-    // // Use a set to ensure unique nicknames
-    // std::set<std::string> uniqueUsers;
-
-    // // Add operators with @ prefix (loop through all operators)
-    // for (std::map<std::string, Client>::iterator it = operators.begin(); it != operators.end(); ++it) {
-    //     const std::string &nickname = it->second.getNickName();
-    //     ss << "@" << nickname << " ";
-    //     uniqueUsers.insert(nickname);
-    // }
-
-    // // Add regular members (if not already listed as operators)
-    // for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
-    //     const std::string &nickname = it->second.getNickName();
-    //     if (operators.find(nickname) == operators.end()) { // Add only if not already an operator
-    //         ss << nickname << " ";
-    //         uniqueUsers.insert(nickname);
-    //     }
-    // }
-    // ss << "\r\n";  // End of the list
-
-    // // Send to all clients in the channel (broadcast it)
-
-    // // send(operatorClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    // // Send the RPL_ENDOFNAMES (366) message to operatorClient
-    // std::stringstream endReply;
-    // endReply << ":" << operatorClient.getNickName() << " 366 " << operatorClient.getNickName()
-    //          << " " << channelName << " :End of /NAMES list\r\n";
-    // // send(operatorClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    // for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
-    //     send(it->second.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    //     send(it->second.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
-    // }
 }
 
+void Client::RPL_NAMREPLY(Client &newUser, const std::string &channelName,
+                         std::map<std::string, Client> &members,
+                         std::map<std::string, Client> &operators) {
+    // 1. Broadcast JOIN message to all current members
+    std::stringstream joinMessage;
+    joinMessage << ":" << newUser.getNickName() << " JOIN :" << channelName << "\r\n";
 
+    for (std::map<std::string, Client>::iterator memberIt = members.begin(); memberIt != members.end(); ++memberIt) {
+        Client &recipient = memberIt->second;
+        send(recipient.getSocket(), joinMessage.str().c_str(), joinMessage.str().length(), 0);
+    }
 
+    // 2. Send RPL_NAMREPLY and RPL_ENDOFNAMES to the new user
+    std::stringstream namesReply;
+    namesReply << ":" << newUser.getNickName() << " 353 " << newUser.getNickName()
+               << " = " << channelName << " :";
 
+    // Add operators with @ prefix
+    for (std::map<std::string, Client>::iterator opIt = operators.begin(); opIt != operators.end(); ++opIt) {
+        namesReply << "@" << opIt->second.getNickName() << " ";
+    }
 
+    // Add regular members
+    for (std::map<std::string, Client>::iterator memIt = members.begin(); memIt != members.end(); ++memIt) {
+        if (operators.find(memIt->first) == operators.end()) { // Skip if already listed as an operator
+            namesReply << memIt->second.getNickName() << " ";
+        }
+    }
+
+    namesReply << "\r\n";
+    send(newUser.getSocket(), namesReply.str().c_str(), namesReply.str().length(), 0);
+
+    // Send RPL_ENDOFNAMES
+    std::stringstream endReply;
+    endReply << ":" << newUser.getNickName() << " 366 " << newUser.getNickName()
+             << " " << channelName << " :End of /NAMES list\r\n";
+    send(newUser.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
+}
 
 
 void Client::ERR_INVITEONLYCHAN(Client &client, const std::string &channel) {
@@ -276,7 +236,7 @@ void Client::ERR_USERONCHANNEL(Client &client, const std::string &nick, const st
 void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName) {
     std::stringstream ss;
 
-    ss << ":" << client.getHostname()
+    ss << ":" << client.getNickName()
         << " 482 " << channelName
         << " :You're not channel operator\r\n";
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
@@ -287,15 +247,13 @@ void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName
 void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator) {
     std::stringstream ss;
 
-    // ss << ":" << client.getHostname()
-    //    << " 700 " << client.getNickName()
-    //    << " " << channelName
-    //    << " :" << newOperator << " is already an operator for this channel.\r\n";
-    ss << ":" << client.getNickName()
-       << " 700 " << channelName
-        << " :"
-        << newOperator
-        << (isOperator ? " is already an operator for " : " is not an operator for ") << channelName << "\r\n";
+    // ss << ":" << client.getNickName()
+    //    << " 700 " << channelName
+    //     << " :"
+    //     << newOperator
+    //     << (isOperator ? " is already an operator for " : " is not an operator for ") << channelName << "\r\n";
+    ss << ":" << client.getNickName() << " 482 " << channelName
+              << " :User " << newOperator << (isOperator ? " is already an operator." : " is not an operator.") << "\r\n";
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
@@ -310,15 +268,17 @@ void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-// void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
-//     std::stringstream ss;
+void Client::ERR_UNKNOWNMODE(Client &client, const std::string &channelName, char modechar) {
+    std::stringstream ss;
 
-//     ss << ":" << client.getNickName()
-//        << " NOTICE " << channelName
-//        << " :You cannot kick yourself.\r\n";
+    ss << ":" << client.getNickName()
+        << " 472 " << channelName
+        << " " << modechar
+        << " :is unknown mode char to me\r\n";
 
-//     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-// }
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
 
 void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, const std::string &userInvited) {
     std::stringstream ss;
@@ -330,54 +290,24 @@ void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, co
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-// void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator,const bool &isOperator) {
-//     std::stringstream ss;
-
-//     ss << ":"
-//         << " NOTICE " << channelName
-//         << " :"
-//         << newOperator
-//         << (isOperator ? " is already an operator for " : " is not an operator for ") << channelName << "\r\n";
-
-//     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-// }
-
-void Client::RPL_NEWOPERATOR(Client &newOperator, const std::string &channelName, Client &oldOperator,const bool &remove) {
+void Client::RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std::string &channelName, bool remove, std::map<std::string, Client> &members) {
     std::stringstream ss;
 
-    if (!remove) {
-        // Notify the new operator
-        ss << ":" << oldOperator.getNickName()
-            << " MODE " << channelName
-            << " +o " << newOperator.getNickName() << " You are now an operator for this channel\r\n";
-        send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    ss << ":" << oldOperator.getNickName()
+       << " MODE " << channelName
+       << (remove ? " -o " : " +o ") << newOperator.getNickName() << "\r\n";
 
-        ss.str(""); // Clear the stringstream for reuse
-        ss.clear();
+    std::string message = ss.str();
 
-        // Notify the channel about the new operator
-        ss << ":" << oldOperator.getNickName()
-        << " MODE " << channelName
-        << " +o " << newOperator.getNickName()  << " has been added as an operator for this channel\r\n";
-        send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    }
-    else {
-        // Notify the new operator
-        ss << ":" << oldOperator.getNickName()
-            << " MODE " << channelName
-            << " -o " << newOperator.getNickName() << " You are no longer an operator for this channel\r\n";
-        send(newOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
+        Client &recipient = it->second;
 
-        ss.str(""); // Clear the stringstream for reuse
-        ss.clear();
-
-        // Notify the channel about the new operator
-        ss << ":" << oldOperator.getNickName()
-        << " MODE " << channelName
-        << " -o " << newOperator.getNickName() << " has been removed as an operator for this channel\r\n";
-        send(oldOperator.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+        if (send(recipient.getSocket(), message.c_str(), message.length(), 0) == -1) {
+            std::cerr << "Error sending message to " << recipient.getNickName() << std::endl;
+        }
     }
 }
+
 
 void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &operatorClient, std::string &reason) {
     std::stringstream ss;
@@ -400,15 +330,6 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &
     // to send a replie to the operator that the user was kicked
 }
 
-// void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, std::string &userInvited) {
-//     std::stringstream ss;
-
-//     ss << ":" << client.getHostname()
-//         << " 701 " << userInvited
-//         << " :You Where Invited To "
-//         << channelName << "\r\n";
-//     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-// }
 
 // void Client::MODE_NOTIFY(const std::string &channelName, const std::string &modeChange, const std::string &target, const std::vector<Client *> &channelClients) {
 //     std::stringstream ss;
