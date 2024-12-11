@@ -169,13 +169,14 @@ void Client::broadcastModeChange(const std::string &setterNick, const std::strin
     }
 }
 
+//Irssi: (default) critical nicklist_set_host: assertion 'host != NULL' failed
 void Client::RPL_NAMREPLY(Client &newUser, const std::string &channelName,
                          std::map<std::string, Client> &members,
                          std::map<std::string, Client> &operators) {
     // 1. Broadcast JOIN message to all current members
     std::stringstream joinMessage;
-    joinMessage << ":" << newUser.getNickName() << " JOIN :" << channelName << "\r\n";
-
+    joinMessage << ":" << newUser.getNickName() << "!" << newUser.getUserName() << "@" << newUser.getHostname()
+            << " JOIN :" << channelName << "\r\n";
     for (std::map<std::string, Client>::iterator memberIt = members.begin(); memberIt != members.end(); ++memberIt) {
         Client &recipient = memberIt->second;
         send(recipient.getSocket(), joinMessage.str().c_str(), joinMessage.str().length(), 0);
@@ -293,9 +294,11 @@ void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, co
 void Client::RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std::string &channelName, bool remove, std::map<std::string, Client> &members) {
     std::stringstream ss;
 
-    ss << ":" << oldOperator.getNickName()
-       << " MODE " << channelName
-       << (remove ? " -o " : " +o ") << newOperator.getNickName() << "\r\n";
+    ss << ":" << oldOperator.getNickName() << "!" << oldOperator.getUserName()
+        << "@" << oldOperator.getHostname()
+        << " MODE " << channelName
+        << (remove ? " -o " : " +o ") << newOperator.getNickName() << "\r\n";
+
 
     std::string message = ss.str();
 
