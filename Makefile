@@ -10,7 +10,7 @@ GRAY	= \e[33;2;37m
 RESET	= \e[0m
 
 SRC = main.cpp SourceFiles/server.cpp SourceFiles/client.cpp SourceFiles/Replies.cpp SourceFiles/Channel.cpp \
-	  SourceFiles/Modes.cpp
+	  SourceFiles/Modes.cpp SourceFiles/JoinChannel.cpp
 
 HDR = HeaderFiles/Server.hpp HeaderFiles/Client.hpp HeaderFiles/Replies.hpp HeaderFiles/Channel.hpp
 

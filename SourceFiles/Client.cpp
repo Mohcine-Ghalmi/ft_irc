@@ -248,11 +248,6 @@ void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName
 void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator) {
     std::stringstream ss;
 
-    // ss << ":" << client.getNickName()
-    //    << " 700 " << channelName
-    //     << " :"
-    //     << newOperator
-    //     << (isOperator ? " is already an operator for " : " is not an operator for ") << channelName << "\r\n";
     ss << ":" << client.getNickName() << " 482 " << channelName
               << " :User " << newOperator << (isOperator ? " is already an operator." : " is not an operator.") << "\r\n";
 
@@ -312,25 +307,19 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std
 }
 
 
-void Client::RPL_KICKED(Client &client, const std::string &channelName, Client &operatorClient, std::string &reason) {
-    std::stringstream ss;
-    std::stringstream ss2;
-    std::stringstream ss3;
-
-    // this replie closes the window of the channel for the kicked user
-    ss << ":" << client.getNickName()
-        << " KICK " << channelName
-        << " :" << client.getNickName() << "\r\n";
-    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-
-    // to send a replie to the kicked user that he was kicked
-    if (reason == ":")
+void Client::RPL_KICKED(Client &client, const std::string &channelName, std::string &reason) {
+    // Ensure reason is not empty
+    if (reason.empty() || reason == ":")
         reason = "behave yourself please";
-    ss2 << "You were kicked from " << channelName
-        << " by " << operatorClient.getNickName() << " reason " << reason << "\r\n";
-    send(client.getSocket(), ss2.str().c_str(), ss2.str().length(), 0);
 
-    // to send a replie to the operator that the user was kicked
+    std::string kickMessage =
+        ":" + client.getNickName() +
+        " KICK " + channelName +
+        " " + client.getNickName() +
+        " :" + reason + "\r\n";
+
+    // Send the kick message
+    send(client.getSocket(), kickMessage.c_str(), kickMessage.length(), 0);
 }
 
 

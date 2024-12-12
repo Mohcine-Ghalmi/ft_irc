@@ -60,3 +60,4 @@ class Server {
 
 void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode);
 void    ft_removeAddOperator(Client &operatorClient, Client *newOperator, Channel *channel, const char &adding);
+void    removeCarriageReturn(std::string &str);

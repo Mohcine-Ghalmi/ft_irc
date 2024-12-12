@@ -327,7 +327,6 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
                      << " PRIVMSG " << channelName
                      << " :" << msg << "\r\n";
 
-    // std::string operatorInfo = isOperator ? "MODE " + channelName + " +o " + sender.getNickName() + "\r\n" : "";
     for (std::map<std::string, Client>::iterator it =  channel->getMembers().begin(); it != channel->getMembers().end(); it++) {
         Client& targetClient = it->second;
         if (targetClient.getNickName() != sender.getNickName()) {
@@ -348,7 +347,6 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     std::string targetList, messageText;
     ss >> targetList;
     std::getline(ss, messageText);
-
     if (!messageText.empty() && messageText[0] == ' ')
         messageText = messageText.substr(1);
     std::stringstream targetStream(targetList);
@@ -369,11 +367,9 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
                 sender.ERR_NOSUCHNICK(sender, targetNick);
         }
     }
-
     LOG_SERVER("Message sent successfully to " + targetList);
     return true;
 }
-
 
 bool hasNewline(const std::string& message) {
     return message.find("\n") != std::string::npos;
@@ -438,18 +434,6 @@ void sendTopicRepleyToChannel(Client operatorClient,Channel &channel, const std:
     }
 }
 
-void sendJoinedRepleyToChannel(Client operatorClient,Channel &channel, const std::string &user) {
-    std::stringstream ss;
-    ss << ":" << operatorClient.getNickName() << " JOIN " << channel.getName()
-       << " :" << user << "\r\n";
-
-
-    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
-        Client targetClient = it->second;
-        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    }
-}
-
 #include <sstream>
 #include <string>
 #include <vector>
@@ -483,9 +467,10 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
         ss >> command >> channelName >> user;
 
         // Extract the reason from the message
-        reason = ss.str().substr(ss.str().find(":"), ss.str().length());
-
-
+        size_t reasonPos = ss.str().find(":");
+        reason = (reasonPos != std::string::npos)
+            ? ss.str().substr(reasonPos + 1)
+            : "";
 
         Channel *channel = getChannel(channelName);
         if (!channel) {
@@ -506,12 +491,13 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
             LOG_ERROR("You can't KICK yourself from a channel");
             continue;
         }
-
         if (channel->getMembers().find(user) != channel->getMembers().end()) {
             Client *clientKicked = getClientByNick(user);
             channel->getMembers().erase(user);
+            clientKicked->RPL_KICKED(*clientKicked, channelName, reason);
             sendkickRepleyToChannel(operatorClient, *channel, user);
-            clientKicked->RPL_KICKED(*clientKicked, channelName, operatorClient, reason);
+            leaveChannel(*clientKicked, channel->getName());
+            channel->removeOperator(clientKicked);
         } else {
             operatorClient.ERR_USERNOTINCHANNEL(operatorClient, user, channelName);
             LOG_ERROR("User " << user << " is not in channel: " << channelName);
@@ -585,123 +571,6 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
     return true;
 }
 
-std::vector<std::string> parameters(const std::string &message, std::string &modeSection, std::string &channel) {
-    std::istringstream ss(message);
-    std::string command;
-    std::vector<std::string> parameters;
-
-    ss >> command;
-    // std::cout << "ss : " << ss.str() << std::endl;
-    ss >> channel;
-    ss >> modeSection;
-    std::string param;
-    while (ss >> param)
-    {
-        std::cout << "Param : " << param << std::endl;
-        parameters.push_back(param);
-    }
-
-    // if (!modeSection.empty() && (modeSection[0] == '+' || modeSection[0] == '-'))
-        // modes = modeSection;
-    return parameters;
-}
-
-bool Server::processModeCommand(Client &operatorClient, const std::string &message) {
-    (void)operatorClient;
-    if (!this->proccessCommandHelper(message, "MODE"))
-        return false;
-
-    std::string channelName, modes;
-    std::vector<std::string> params = parameters(message, modes, channelName);
-    std::string command = "MODE";
-
-    if (command.empty() || modes.empty()) {
-        operatorClient.ERR_NEEDMOREPARAMS(operatorClient, "MODE");
-        return false;
-    }
-
-    Channel* channel = getChannel(channelName);
-    if (!channel) {
-        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName); // Channel doesn't exist
-        LOG_ERROR("Channel Not Found");
-        return false;
-    }
-
-    if (channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end()) {
-        operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
-        LOG_ERROR(operatorClient.getNickName() << " Is Not An Operator On This Channel");
-        return false;
-    }
-
-    size_t paramsInc = 0;
-    Client *newOperator = nullptr;
-    char action = '+'; // Default action
-
-    for (size_t i = 0; i < modes.length(); ++i) {
-        char mode = modes[i];
-
-        // Update action when encountering '+' or '-'
-        if (mode == '+' || mode == '-') {
-            action = mode;
-            continue;
-        }
-
-        switch (mode) {
-            case 'i': // Invite-only
-                ft_setInviteOnly(channel, operatorClient, action);
-                break;
-
-            case 't': // Topic restriction
-                channel->setTopicRestriction((action == '+') ? 1 : 0);
-                break;
-
-            case 'k': // Channel key
-                if (paramsInc < params.size()) {
-                    if (action == '+') {
-                        channel->setKeyProtection(1, params[paramsInc++]);
-                    } else if (action == '-') {
-                        channel->setKeyProtection(0, "");
-                    }
-                } else {
-                    LOG_ERROR("Key protection requires a parameter");
-                }
-                break;
-
-            case 'o': // Operator
-                if (paramsInc >= params.size()) {
-                    LOG_ERROR("Operator change requires a parameter");
-                    return false;
-                }
-
-                removeCarriageReturn(params[paramsInc]);
-                newOperator = getClientByNick(params[paramsInc]);
-
-                if (!newOperator) {
-                    operatorClient.ERR_USERNOTINCHANNEL(operatorClient, params[paramsInc], channelName);
-                    LOG_ERROR("User Not Found");
-                    paramsInc++;
-                    break;
-                }
-
-                if (channel->getMembers().find(newOperator->getNickName()) != channel->getMembers().end()) {
-                    ft_removeAddOperator(operatorClient, newOperator, channel, action);
-                    paramsInc++;
-                } else {
-                    operatorClient.ERR_USERNOTINCHANNEL(operatorClient, newOperator->getNickName(), channelName);
-                    return false;
-                }
-                break;
-
-            default:
-                LOG_ERROR("Unknown mode: " << mode);
-                operatorClient.ERR_UNKNOWNMODE(operatorClient ,channelName , mode);
-                break;
-        }
-    }
-
-    return true;
-}
-
 void Server::handleClientMessage(Client &client, const std::string &message) {
     client.appendToBuffer(message);
     if (hasNewline(message)) {
@@ -770,43 +639,6 @@ Channel* Server::getChannel(const std::string &channelName) {
     return NULL;
 }
 
-bool Server::joinChannel(Client &client, const std::string &channelName,const std::string &key) { // this should check the channel mode
-    Channel* channel = createChannel(channelName);  // Create channel if it doesn't exist
-        LOG_SERVER(" show channel name = " << channelName);
-    if (channel) {
-        if (channel->isKeyProtected() && channel->getKey() != key)
-        {
-            client.ERR_BADCHANNELKEY(client, channelName);
-            LOG_ERROR(channelName << " is protected (you need a key/password)");
-            return false;
-        }
-        if (channel->isInviteOnly())
-        {
-            if (channel->getInvitedUsers().find(client.getNickName()) != channel->getInvitedUsers().end())
-            {
-                LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
-                channel->addMember(&client);
-                if (!channel->getTopic().empty())
-                    client.RPL_TOPIC(client, channel->getName(),channel->getTopicSetter());// rpl for topic
-                channel->removeInvitedUser(&client);
-                return true;
-            }
-            client.ERR_INVITEONLYCHAN(client, channelName);
-            LOG_ERROR(channelName << " is invite only you can't join without invite");
-            return false;
-        }
-        if (channel->getMembers().size() <= 0) // if the channel doesn't exists the first user joined it must be the operator
-            channel->addOperator(&client);
-        if (!channel->getTopic().empty())
-            client.RPL_TOPIC(client, channel->getName(),channel->getTopicSetter()); //rpl for topic
-        channel->addMember(&client);
-        client.RPL_NAMREPLY(client, channel->getName(), channel->getMembers(), channel->getOperators());
-        //client.sendReply(331, client);  // Send a welcome message or similar notification
-        LOG_SERVER("client joind " << channel->getName() << " client number " << channel->getMembers().size());
-        return true;
-    }
-    return false;
-}
 
 bool Server::processPartCommand(Client &client, const std::string &message) {
     if (!this->proccessCommandHelper(message, "PART"))
@@ -833,27 +665,6 @@ bool Server::leaveChannel(Client &client, const std::string &channelName) {
             channels.erase(channelName);
         }
         return true;
-    }
-    return false;
-}
-
-bool Server::processJoinCommand(Client &client, const std::string &message) {
-    if (this->proccessCommandHelper(message, "JOIN")) {
-        std::stringstream ss(message);
-        std::string command, channelName, key;
-        ss >> command >> channelName >> key;
-        if (channelName.empty()) {
-            client.ERR_NEEDMOREPARAMS(client, "JOIN");  // Send ERR_NEEDMOREPARAMS if no channel specified
-            return false;
-        }
-        removeCarriageReturn(channelName);
-        removeCarriageReturn(key);
-        if (joinChannel(client, channelName, key)){
-
-            // sendJoinedRepleyToChannel(client, *channel, client.getNickName());
-            client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome
-            return true;
-        }
     }
     return false;
 }
