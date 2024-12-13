@@ -61,3 +61,12 @@ class Server {
 void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode);
 void    ft_removeAddOperator(Client &operatorClient, Client *newOperator, Channel *channel, const char &adding);
 void    removeCarriageReturn(std::string &str);
+void    sendHellGate(int client_socket);
+bool    isValidNick(const std::string &nickname);
+void    sendCapResponse(int clientSocket);
+std::vector<std::string> splitMessages(const std::string &buffer);
+std::vector<std::string> splitByDelimiter(const std::string &input, const std::string &delimiter);
+bool    hasNewline(const std::string& message);
+void    sendInviteReply(Client operatorClient,Channel &channel, const std::string &invited);
+void    sendkickRepleyToChannel(Client operatorClient,Channel &channel, const std::string &kickedUser);
+void    sendTopicRepleyToChannel(Client operatorClient,Channel &channel, const std::string &topic);
