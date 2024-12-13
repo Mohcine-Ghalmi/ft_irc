@@ -15,6 +15,18 @@ std::vector<std::string> parameters(const std::string &message, std::string &mod
     return parameters;
 }
 
+void sendModeIRepleyToChannel_TMP(Client &client, Channel &channel, bool isRemoving, char mode) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName() << " 324 " << client.getNickName() << " "
+       << channel.getName() << " "
+       << (isRemoving ? "+" : "-") << mode << "\r\n";
+    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
+        Client targetClient = it->second;
+        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    }
+}
+
 bool Server::processModeCommand(Client &operatorClient, const std::string &message) {
     (void)operatorClient;
     if (!this->proccessCommandHelper(message, "MODE"))
@@ -68,9 +80,13 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 if (paramsInc < params.size()) {
                     if (action == '+') {
                         channel->setKeyProtection(1, params[paramsInc++]);
-                    } else if (action == '-') {
+                    } else if (action == '-' && params[paramsInc++] == channel->getKey()) {
                         channel->setKeyProtection(0, "");
+                    } else {
+                        operatorClient.ERR_BADCHANNELKEY_CHANNEL(operatorClient, channel->getName());
+                        break ;
                     }
+                    sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 'k');
                 } else {
                     LOG_ERROR("Key protection requires a parameter");
                 }
@@ -110,18 +126,6 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
 
     return true;
 }
-
-// void sendModeIRepleyToChannel(Client &client, Channel &channel, bool isRemoving, char mode) {
-//     std::stringstream ss;
-
-//     ss << ":" << client.getNickName() << " 324 " << client.getNickName() << " "
-//        << channel.getName() << " "
-//        << (isRemoving ? "+" : "-") << mode << "\r\n";
-//     for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
-//         Client targetClient = it->second;
-//         send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-//     }
-// }
 
 void sendModeIRepleyToChannel(Client &client, Channel &channel, bool inviteOnly) {
     std::stringstream ss;

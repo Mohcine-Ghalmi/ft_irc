@@ -11,12 +11,8 @@ bool Server::processJoinCommand(Client &client, const std::string &message) {
         }
         removeCarriageReturn(channelName);
         removeCarriageReturn(key);
-        if (joinChannel(client, channelName, key)){
-
-            // sendJoinedRepleyToChannel(client, *channel, client.getNickName());
-            client.sendReply(331, client);  // Send RPL_NOTOPIC or similar welcome
+        if (joinChannel(client, channelName, key))
             return true;
-        }
     }
     return false;
 }

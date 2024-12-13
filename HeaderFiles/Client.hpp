@@ -103,4 +103,5 @@ class Client{
                                 std::map<std::string, Client> &operators);
         void broadcastModeChange(const std::string &setterNick, const std::string &mode, const std::string &targetNick,  std::map<std::string, Client> &members,const std::string &channelName);
         void ERR_UNKNOWNMODE(Client &client, const std::string &channelName, char modechar);
+        void ERR_BADCHANNELKEY_CHANNEL(Client &client, const std::string &channelName);
 };

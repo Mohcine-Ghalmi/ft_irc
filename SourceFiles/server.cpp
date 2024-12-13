@@ -539,7 +539,6 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
 bool Server::processINVITECommand(Client &operatorClient, const std::string &message) {
     if (!this->proccessCommandHelper(message, "INVITE"))
         return false;
-    (void)operatorClient;
     std::istringstream ss(message);
     std::string command, userInvited, channelName;
     ss >> command >> userInvited >> channelName;

@@ -99,15 +99,6 @@ void Client::ERR_BADCHANNELKEY(Client &client, const std::string &channelName) {
 }
 
 
-
-// void Client::RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName) {
-//     std::stringstream ss;
-
-//     ss << "332 " << setterName << " " << channelName << " :" << topic;
-
-//     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-// }
-
 void Client::RPL_TOPIC(Client &client, const std::string &channelName, const std::string &topic) {
     std::stringstream ss;
 
@@ -162,10 +153,6 @@ void Client::broadcastModeChange(const std::string &setterNick, const std::strin
     for (std::map<std::string, Client >::iterator it = members.begin(); it != members.end(); ++it) {
         Client recipient = it->second;
         send(recipient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-
-        // Debugging output
-        // std::cout << "Sent mode change to " << recipient->getNickName() << ":\n"
-        //           << ss.str() << std::endl;
     }
 }
 
@@ -260,6 +247,16 @@ void Client::RPL_CANTKICKSELF(Client &client, const std::string &channelName) {
     ss << ":" << client.getNickName()
        << " 701 " << channelName
        << " :You cannot kick yourself.\r\n";
+
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::ERR_BADCHANNELKEY_CHANNEL(Client &client, const std::string &channelName) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName()
+       << " 800 " << channelName
+       << " :This Channel is not protected with a key or the key you are providing is wrong\r\n";
 
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
