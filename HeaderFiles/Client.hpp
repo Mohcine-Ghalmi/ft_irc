@@ -86,16 +86,13 @@ class Client{
         void ERR_INVITEONLYCHAN(Client &client, const std::string &channelName);
         void ERR_USERONCHANNEL(Client &client, const std::string &nick, const std::string &channelName);
         void ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName);
-        // void RPL_INVITESENTTO(Client &client, const std::string &channelName,std::string &userInvited);
         void RPL_INVITESENTTO(Client &client, const std::string &channelName, const std::string &userInvited);
         void RPL_KICKED(Client &client, const std::string &channelName, std::string &reason);
         void ERR_USERNOTINCHANNEL(Client &client,  const std::string &targetNick, const std::string &channelName);
         void RPL_CANTKICKSELF(Client &client, const std::string &channelName);
-        // void RPL_TOPIC(Client &client,const std::string &setterName ,const std::string &topic, const std::string &channelName);
         void RPL_TOPIC(Client &client, const std::string &channelName, const std::string &topic);
         void ERR_BADCHANNELKEY(Client &client, const std::string &channelName);
         void RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std::string &channelName, bool remove, std::map<std::string, Client> &members);
-        // void RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator);
         void RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator);
         void RPL_PUBLICCHANNEL(Client &client, const std::string &channelName, const bool &inviteOnly);
         void RPL_NAMREPLY(Client &operatorClient, const std::string &channelName,

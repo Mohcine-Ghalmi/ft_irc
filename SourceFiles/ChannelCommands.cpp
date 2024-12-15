@@ -1,7 +1,6 @@
 #include "../HeaderFiles/Server.hpp"
 
 void Server::sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText) {
-    // Find the channel by name
     Channel* channel = getChannel(channelName);
     if (!channel) {
         LOG_SERVER("channel doesn't exist");
@@ -13,12 +12,10 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
         LOG_SERVER("client is not in the channel");
         return;
     }
-     // Remove the leading ':'
-    std::string msg = (messageText[0] == ':') ? messageText.substr(1) : messageText;
-    // bool isOperator = (channel->getOperators().find(sender.getNickName()) != channel->getOperators().end());
 
-    // Construct the full IRC message format
+    std::string msg = (messageText[0] == ':') ? messageText.substr(1) : messageText;
     std::stringstream formattedMessage;
+
     formattedMessage << ":" << sender.getNickName()
                      << " PRIVMSG " << channelName
                      << " :" << msg << "\r\n";
@@ -27,9 +24,6 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
         Client& targetClient = it->second;
         if (targetClient.getNickName() != sender.getNickName()) {
             send(targetClient.getSocket(), formattedMessage.str().c_str(), formattedMessage.str().length(), 0);
-            // if (!operatorInfo.empty()) {
-            //     send(targetClient.getSocket(), operatorInfo.c_str(), operatorInfo.length(), 0);
-            // }
         }
     }
 }
@@ -51,7 +45,7 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
         if (targetNick[0] == '#') {
             Channel *targetChannel = getChannel(targetNick);
             if (targetChannel)
-                sendMessageToChannel(sender, targetNick, messageText);  // Sends to all members of the channel
+                sendMessageToChannel(sender, targetNick, messageText);
         }
         else {
             Client *targetClient = getClientByNick(targetNick);
@@ -73,7 +67,7 @@ bool hasNewline(const std::string& message) {
 bool Server::checkInvitesToChannel(Client &operatorClient, Channel *channel, std::string &channelName, Client *userInvited)
 {
     if (!channel) {
-        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);//channel doesn't exist
+        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);
         LOG_ERROR("Channel Not Found");
         return false;
     }
@@ -131,12 +125,10 @@ void sendTopicRepleyToChannel(Client operatorClient,Channel &channel, const std:
 
 
 bool Server::processKICKCommand(Client &operatorClient, const std::string &message) {
-    // Split the message into individual KICK commands
     if (!proccessCommandHelper(message, "KICK"))
         return false;
     std::vector<std::string> commandList = splitByDelimiter(message, "\r\n");
 
-    // Process each KICK command in the vector
     for (size_t i = 0; i < commandList.size(); ++i) {
         const std::string &singleMessage = commandList[i];
         if (!proccessCommandHelper(singleMessage, "KICK"))
@@ -147,7 +139,6 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
 
         ss >> command >> channelName >> user;
 
-        // Extract the reason from the message
         size_t reasonPos = ss.str().find(":");
         reason = (reasonPos != std::string::npos)
             ? ss.str().substr(reasonPos + 1)
@@ -166,7 +157,6 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
             continue;
         }
 
-        // Validate and process the KICK command
         if (user == operatorClient.getNickName()) {
             operatorClient.RPL_CANTKICKSELF(operatorClient, channelName);
             LOG_ERROR("You can't KICK yourself from a channel");
@@ -185,7 +175,7 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
         }
     }
 
-    return true; // Return true if processing completes successfully
+    return true;
 }
 
 
@@ -231,20 +221,18 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
     Channel *channel = getChannel(channelName);
     Client *invitedClient = getClientByNick(userInvited);
     if (!invitedClient) {
-        operatorClient.ERR_NOSUCHNICK(operatorClient, userInvited);//user doesn't exi, ""st
+        operatorClient.ERR_NOSUCHNICK(operatorClient, userInvited);
         LOG_ERROR("User Not Found");
         return false;
     }
     if (!checkInvitesToChannel(operatorClient, channel, channelName, invitedClient))
         return false;
-    // if ()
     if (channel->isInviteOnly() && channel->getInvitedUsers().find(invitedClient->getNickName()) == channel->getInvitedUsers().end()) {
         channel->addInvitedUser(invitedClient);
         sendInviteReply(operatorClient, *channel, userInvited);
         invitedClient->RPL_INVITESENTTO(*invitedClient, channelName, operatorClient.getNickName());
     }
     else {
-        //user already invited or this channel is public
         operatorClient.RPL_PUBLICCHANNEL(operatorClient, channelName, channel->isInviteOnly());
         return false;
     }
@@ -253,19 +241,15 @@ bool Server::processINVITECommand(Client &operatorClient, const std::string &mes
 
 
 Channel* Server::createChannel(const std::string &channelName) {
-    std::string realName; // this real name must be checked for the ',' so you get the names
+    std::string realName;
     unsigned long pos = channelName.find(" ");
     if (pos == std::string::npos) realName = channelName;
     else realName = channelName.substr(0, pos);
     std::map<std::string, Channel>::iterator it = channels.find(realName);
     // Create the channel if it doesn't exist
-    if (it == channels.end()){
-        //creating the channel with it's name
-        channels[channelName] = Channel(realName); // this should be after checking it it's a private or protected chat..
-        // check options
-        // meanwhile check the next part does it exists to get the key for protected channels.
-    }
-    if (pos != std::string::npos) return NULL; // TODO; this is should be an error cause the channel is already joind and the user is trying to set options : Know that this can make the code Crush
+    if (it == channels.end())
+        channels[channelName] = Channel(realName);
+    if (pos != std::string::npos) return NULL;
     return &channels[channelName];
 }
 
@@ -302,10 +286,8 @@ bool Server::leaveChannel(Client &client, const std::string &channelName) {
     Channel* channel = getChannel(channelName);
     if (channel && channel->isMember(&client)) {
         channel->removeMember(&client);
-        if (channel->getMembers().empty()) {
-            // Delete channel if empty
+        if (channel->getMembers().empty())
             channels.erase(channelName);
-        }
         return true;
     }
     return false;
@@ -317,7 +299,7 @@ bool Server::processJoinCommand(Client &client, const std::string &message) {
         std::string command, channelName, key;
         ss >> command >> channelName >> key;
         if (channelName.empty()) {
-            client.ERR_NEEDMOREPARAMS(client, "JOIN");  // Send ERR_NEEDMOREPARAMS if no channel specified
+            client.ERR_NEEDMOREPARAMS(client, "JOIN");
             return false;
         }
         removeCarriageReturn(channelName);

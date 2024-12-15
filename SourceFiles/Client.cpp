@@ -88,16 +88,13 @@ void Client::RPL_PUBLICCHANNEL(Client &client, const std::string &channelName, c
 void Client::ERR_BADCHANNELKEY(Client &client, const std::string &channelName) {
     std::stringstream ss;
 
-    // Constructing the error message according to the IRC protocol
     ss << ":" << client.getHostname()
        << " 475 " << client.getNickName()
        << " " << channelName
        << " :Cannot join channel (+k)\r\n";
 
-    // Sending the error message to the client's socket
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
-
 
 void Client::RPL_TOPIC(Client &client, const std::string &channelName, const std::string &topic) {
     std::stringstream ss;
@@ -156,7 +153,6 @@ void Client::broadcastModeChange(const std::string &setterNick, const std::strin
     }
 }
 
-//Irssi: (default) critical nicklist_set_host: assertion 'host != NULL' failed
 void Client::RPL_NAMREPLY(Client &newUser, const std::string &channelName,
                          std::map<std::string, Client> &members,
                          std::map<std::string, Client> &operators) {
@@ -181,21 +177,18 @@ void Client::RPL_NAMREPLY(Client &newUser, const std::string &channelName,
 
     // Add regular members
     for (std::map<std::string, Client>::iterator memIt = members.begin(); memIt != members.end(); ++memIt) {
-        if (operators.find(memIt->first) == operators.end()) { // Skip if already listed as an operator
+        if (operators.find(memIt->first) == operators.end()) // Skip if already listed as an operator
             namesReply << memIt->second.getNickName() << " ";
-        }
     }
 
     namesReply << "\r\n";
     send(newUser.getSocket(), namesReply.str().c_str(), namesReply.str().length(), 0);
 
-    // Send RPL_ENDOFNAMES
     std::stringstream endReply;
     endReply << ":" << newUser.getNickName() << " 366 " << newUser.getNickName()
              << " " << channelName << " :End of /NAMES list\r\n";
     send(newUser.getSocket(), endReply.str().c_str(), endReply.str().length(), 0);
 }
-
 
 void Client::ERR_INVITEONLYCHAN(Client &client, const std::string &channel) {
     std::stringstream ss;
@@ -230,8 +223,6 @@ void Client::ERR_CHANOPRIVSNEEDED(Client &client, const std::string &channelName
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-
-// Custom Replies (using 600+ range)
 void Client::RPL_ALREADYOPERATOR(Client &client, const std::string &channelName, const std::string &newOperator, const bool &isOperator) {
     std::stringstream ss;
 
@@ -303,9 +294,7 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std
     }
 }
 
-
 void Client::RPL_KICKED(Client &client, const std::string &channelName, std::string &reason) {
-    // Ensure reason is not empty
     if (reason.empty() || reason == ":")
         reason = "behave yourself please";
 
@@ -315,25 +304,5 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, std::str
         " " + client.getNickName() +
         " :" + reason + "\r\n";
 
-    // Send the kick message
     send(client.getSocket(), kickMessage.c_str(), kickMessage.length(), 0);
 }
-
-
-// void Client::MODE_NOTIFY(const std::string &channelName, const std::string &modeChange, const std::string &target, const std::vector<Client *> &channelClients) {
-//     std::stringstream ss;
-
-//     ss << ":" << getNickname()
-//        << " MODE " << channelName
-//        << " " << modeChange;
-
-//     if (!target.empty()) {
-//         ss << " " << target;
-//     }
-//     ss << "\r\n";
-
-//     // Send the message to all clients in the channel
-//     for (std::vector<Client *>::const_iterator it = channelClients.begin(); it != channelClients.end(); ++it) {
-//         send((*it)->getSocket(), ss.str().c_str(), ss.str().length(), 0);
-//     }
-// }

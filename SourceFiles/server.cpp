@@ -109,8 +109,6 @@ void ping(std::string message, int ClientSocket) {
     std::string pingToken = message.substr(5);
     std::string pongResponse = "PONG " + pingToken + "\r\n";
 
-    // Send PONG response back to the client (to stay connecte without it the connection to
-    // irssi client will restart if no pong send)
     send(ClientSocket, pongResponse.c_str(), pongResponse.size(), 0);
     LOG_CLIENT(ClientSocket, message);
     LOG_SERVER(pongResponse);
@@ -226,7 +224,7 @@ void Server::start() {
         }
 
         if (FD_ISSET(getServerSocket(), &readfds))
-            acceptConnection(); // create clients
+            acceptConnection();
         processClienstMessage(readfds);
     }
 }

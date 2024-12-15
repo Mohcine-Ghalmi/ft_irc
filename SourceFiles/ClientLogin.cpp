@@ -28,7 +28,7 @@ bool Server::processPassCommand(Client &client, const std::string &message) {
             pass.erase(pass.length() - 1);
 
         if (pass != password) {
-            client.sendReply(464, client); // we will not use this because pass is the first thing we check so we don't have enought data
+            client.sendReply(464, client);
             LOG_SERVER("Invalid password");
             client.clearBuffer();
             return false;
@@ -44,7 +44,7 @@ bool Server::processPassCommand(Client &client, const std::string &message) {
 bool Server::isNickTaken(std::string &nick) {
     for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ++it)
         if (it->getNickName() == nick)
-            return true; // Nickname is already taken
+            return true;
     return false;
 }
 
@@ -93,13 +93,13 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
     }
     return false;
 }
-// FOR irssi /quote USER myusername myhostname localhost :MyCustomRealName
+
 bool Server::processUserCommand(Client &client, const std::string &message) {
     if (this->proccessCommandHelper(message, "USER")) {
         std::stringstream ss(message.substr(5));
         std::string username, hostname, realname;
 
-        ss >> username >> hostname;  // Extract username and hostname
+        ss >> username >> hostname;
 
         size_t realnamePos = message.find(':');
         if (realnamePos != std::string::npos) {
@@ -149,8 +149,8 @@ bool Server::setUpClient(Client &client) {
         LOG_SERVER("Error: PASS, NICK, and USER must all be provided.");
         return false;
     }
-    client.sendReply(001, client);// set you're nickname
-    client.sendReply(002, client);// set you're host
+    client.sendReply(001, client);
+    client.sendReply(002, client);
     client.authenticate();
     return true;
 }
@@ -164,7 +164,6 @@ void Server::updateNickUser(Client &client) {
         if (processNickCommand(client, message)) {
             messages.erase(messages.begin() + i);
             client.sendReply(001, client);
-            // may add nick name updated reply
             continue;
         } else if (processUserCommand(client, message)) {
             messages.erase(messages.begin() + i);
