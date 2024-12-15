@@ -1,7 +1,7 @@
 NAME = ircserv
 
 CC	    = c++
-FLAGS   = -Wall -Wextra -Werror -std=c++98 -g -fsanitize=address
+FLAGS   = -Wall -Wextra -Werror -std=c++98
 RM	    = rm -rf
 
 GREEN	= \e[92;5;118m
