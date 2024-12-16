@@ -3,13 +3,11 @@
 #include <curl/curl.h>
 #include <sstream>
 
-// Callback to handle the API response
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
     userp->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
-// Function to fetch weather data
 std::string getWeather(const std::string& city) {
     std::string apiKey = "6062e89453f4af76f7635ad3fafa8a78";
     std::string url = "http://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + apiKey + "&units=metric";
@@ -29,7 +27,6 @@ std::string getWeather(const std::string& city) {
     return readBuffer;
 }
 
-// Function to parse a value from JSON manually
 std::string parseJSONValue(const std::string& json, const std::string& key) {
     size_t keyPos = json.find("\"" + key + "\":");
     if (keyPos == std::string::npos) {
@@ -55,7 +52,6 @@ bool Server::processBotcommand(Client &client, const std::string &message) {
     std::stringstream ss(message.substr(message.find(" ")));
     std::string city, commad, channelName;
     ss >> channelName >> commad >> city;
-    std::cout << channelName << " ; channelName" << std::endl;
     if (city.empty() || channelName.empty())
     {
         ERR_BOTCALLED(client, (channelName.empty() ? "" : channelName), "Could not fetch weather data. Check the city name or API key.", isNickTaken(channelName));
@@ -102,4 +98,3 @@ void Server::ERR_BOTCALLED(Client &client, const std::string &channelName,const 
         << " :"<< Weather << "\r\n";
     send(tmp->getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
-
