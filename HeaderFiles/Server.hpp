@@ -39,6 +39,7 @@ class Server {
         bool isNickTaken(std::string &nick);
         bool processPrivMsgCommand(Client &sender, const std::string &message);
         bool processJoinCommand(Client &client, const std::string &message);
+        bool processBotcommand(Client &client, const std::string &message);
         //
         bool processModeCommand(Client &operatorClient, const std::string &message);
         bool processINVITECommand(Client &operatorClient, const std::string &message);

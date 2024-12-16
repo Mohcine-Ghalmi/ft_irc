@@ -303,7 +303,7 @@ void Client::RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std
     }
 }
 
-
+//operator param
 void Client::RPL_KICKED(Client &client, const std::string &channelName, std::string &reason) {
     // Ensure reason is not empty
     if (reason.empty() || reason == ":")
@@ -319,6 +319,23 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, std::str
     send(client.getSocket(), kickMessage.c_str(), kickMessage.length(), 0);
 }
 
+void Client::RPL_BOTCALLED(Client &client, const std::string &channelName, std::stringstream &Weather) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName()
+        << " 801 " << channelName
+        << " :"<< Weather.str() << "\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Client::ERR_BOTCALLED(Client &client, const std::string &channelName,const std::string &Weather) {
+    std::stringstream ss;
+
+    ss << ":" << client.getNickName()
+        << " 802 " << channelName
+        << " :"<< Weather << "\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
 
 // void Client::MODE_NOTIFY(const std::string &channelName, const std::string &modeChange, const std::string &target, const std::vector<Client *> &channelClients) {
 //     std::stringstream ss;

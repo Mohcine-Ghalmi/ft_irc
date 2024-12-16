@@ -37,7 +37,10 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
 bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     if (!this->proccessCommandHelper(message, "PRIVMSG"))
         return false;
-
+    if (processBotcommand(sender, message)) {
+        LOG_INFO("Bot Called");
+        return false;
+    }
     std::istringstream ss(message.substr(8));
     std::string targetList, messageText;
     ss >> targetList;
