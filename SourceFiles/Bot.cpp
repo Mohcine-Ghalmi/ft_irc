@@ -11,7 +11,7 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* use
 
 // Function to fetch weather data
 std::string getWeather(const std::string& city) {
-    std::string apiKey = std::getenv("API_KEY");
+    std::string apiKey = "6062e89453f4af76f7635ad3fafa8a78";
     std::string url = "http://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + apiKey + "&units=metric";
     CURL* curl;
     CURLcode res;
@@ -52,27 +52,54 @@ std::string parseJSONValue(const std::string& json, const std::string& key) {
 bool Server::processBotcommand(Client &client, const std::string &message) {
     if (message.find("!Weather") == std::string::npos)
         return false;
-    std::stringstream ss(message.substr(message.find("#")));
+    std::stringstream ss(message.substr(message.find(" ")));
     std::string city, commad, channelName;
     ss >> channelName >> commad >> city;
+    std::cout << channelName << " ; channelName" << std::endl;
+    if (city.empty() || channelName.empty())
+    {
+        ERR_BOTCALLED(client, (channelName.empty() ? "" : channelName), "Could not fetch weather data. Check the city name or API key.", isNickTaken(channelName));
+        return false;
+    }
     std::string response = getWeather(city);
     std::string cityName = parseJSONValue(response, "name");
     std::string temp = parseJSONValue(response, "temp");
     std::string weatherDescription = parseJSONValue(response, "description");
 
-    // Display the result
-    if (city.empty() || channelName.empty())
-    {
-        client.ERR_BOTCALLED(client, "#chat", "Could not fetch weather data. Check the city name or API key.");
-        return true;
-    }
     std::stringstream weatherMsg;
     if (!cityName.empty() && !temp.empty() && !weatherDescription.empty()) {
         weatherMsg << "Weather in " << cityName << ": " << weatherDescription
                   << " with " << temp << "°C.";
-        client.RPL_BOTCALLED(client, "#chat", weatherMsg);
+        RPL_BOTCALLED(client, channelName, weatherMsg, isNickTaken(channelName));
     } else {
-        client.ERR_BOTCALLED(client, "#chat", "Could not fetch weather data. Check the city name or API key.");
+        ERR_BOTCALLED(client, channelName, "Could not fetch weather data. Check the city name or API key.", isNickTaken(channelName));
     }
     return true;
 }
+
+void Server::RPL_BOTCALLED(Client &client, const std::string &channelName, std::stringstream &Weather, bool isClient) {
+    std::stringstream ss;
+
+    Client *tmp = &client;
+    if (isClient) {
+        tmp = getClientByNick(channelName);
+    }
+    ss << ":" << "<WeatherBot>"
+        << ((isClient) ? " PRIVMSG " : " 801 ") << channelName
+        << " :"<< Weather.str() << "\r\n";
+    send(tmp->getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+
+void Server::ERR_BOTCALLED(Client &client, const std::string &channelName,const std::string &Weather, bool isClient) {
+    std::stringstream ss;
+
+    Client *tmp = &client;
+    if (isClient) {
+        tmp = getClientByNick(channelName);
+    }
+    ss << ":" << "<WeatherBot>"
+        << ((isClient) ? " PRIVMSG " : " 802 ") << channelName
+        << " :"<< Weather << "\r\n";
+    send(tmp->getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
+

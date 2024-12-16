@@ -191,6 +191,10 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
     if (ss.str().find(":") != std::string::npos)
         topic = ss.str().substr(ss.str().find(":") + 1, ss.str().length());
     Channel *channel = getChannel(channelName);
+    if (!channel) {
+        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);
+        return false;
+    }
     if (channel && channel->isTopicRestricted() && channel->getOperators().find(operatorClient.getNickName()) == channel->getOperators().end()) {
         operatorClient.ERR_CHANOPRIVSNEEDED(operatorClient, channelName);
         LOG_ERROR(operatorClient.getNickName() << " is not an operator on this channel");

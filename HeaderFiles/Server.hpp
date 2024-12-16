@@ -56,6 +56,9 @@ class Server {
         void sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText);
 
         bool proccessCommandHelper(std::string cmd, std::string dif);
+
+        void RPL_BOTCALLED(Client &client, const std::string &channelName, std::stringstream &Weather, bool isClient);
+        void ERR_BOTCALLED(Client &client, const std::string &channelName,const std::string &Weather, bool isClient);
 };
 
 void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode);
