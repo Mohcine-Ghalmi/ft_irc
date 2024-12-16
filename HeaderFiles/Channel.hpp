@@ -10,14 +10,14 @@ class Channel {
         std::string name;
         std::string topic;
         std::string topicSetter;
-        std::map<std::string, Client> members;       // A set of pointers to clients in this channel
-        std::map<std::string, Client> operators;     // Channel operators
-        std::map<std::string, Client> invitedUsers;     // Channel invited users
-        bool inviteOnly;                 // i mode
-        bool topicRestriction;           // t mode
-        bool keyProtected;               // k mode
-        std::string key;                 // Channel key (password)
-        int userLimit;                   // l mode, 0 means no limit
+        std::map<std::string, Client> members;
+        std::map<std::string, Client> operators;
+        std::map<std::string, Client> invitedUsers;
+        bool inviteOnly;
+        bool topicRestriction;
+        bool keyProtected;
+        std::string key;
+        int userLimit;
 
    public:
         Channel(const std::string &channelName);
@@ -25,7 +25,6 @@ class Channel {
         Channel(const Channel &org);
 
 
-        // Basic getter/setter functions
         const std::string& getName() const;
         const std::string& getTopic() const;
         const std::string& getTopicSetter() const;
@@ -44,7 +43,7 @@ class Channel {
         void addMember(Client* client);
         void removeMember(Client* client);
         bool isMember(Client* client) const;
-        //
+
         void addInvitedUser(Client* client);
         void removeInvitedUser(Client* client);
         std::map<std::string, Client>& getMembers();

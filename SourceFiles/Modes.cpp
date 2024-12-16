@@ -43,7 +43,7 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
 
     Channel* channel = getChannel(channelName);
     if (!channel) {
-        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName); // Channel doesn't exist
+        operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);
         LOG_ERROR("Channel Not Found");
         return false;
     }
@@ -56,27 +56,26 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
 
     size_t paramsInc = 0;
     Client *newOperator = nullptr;
-    char action = '+'; // Default action
+    char action = '+';
 
     for (size_t i = 0; i < modes.length(); ++i) {
         char mode = modes[i];
 
-        // Update action when encountering '+' or '-'
         if (mode == '+' || mode == '-') {
             action = mode;
             continue;
         }
 
         switch (mode) {
-            case 'i': // Invite-only
+            case 'i':
                 ft_setInviteOnly(channel, operatorClient, action);
                 break;
 
-            case 't': // Topic restriction
+            case 't':
                 channel->setTopicRestriction((action == '+') ? 1 : 0);
                 break;
 
-            case 'k': // Channel key
+            case 'k':
                 if (paramsInc < params.size()) {
                     if (action == '+') {
                         channel->setKeyProtection(1, params[paramsInc++]);
@@ -92,7 +91,7 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 }
                 break;
 
-            case 'o': // Operator
+            case 'o':
                 if (paramsInc >= params.size()) {
                     LOG_ERROR("Operator change requires a parameter");
                     return false;
@@ -150,11 +149,9 @@ void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode) {
     channel->setInviteOnly(value);
 }
 
-// this is for /mode +/- o
 void    ft_removeAddOperator(Client &operatorClient, Client *newOperator, Channel *channel, const char &adding) {
     if (adding == '+') {
         if (channel->getOperators().find(newOperator->getNickName()) == channel->getOperators().end()) {
-            // Add the new operator to the channel
             operatorClient.RPL_NEWOPERATOR(*newOperator, operatorClient, channel->getName(), false, channel->getMembers());
             channel->addOperator(newOperator);
         } else {
@@ -168,7 +165,6 @@ void    ft_removeAddOperator(Client &operatorClient, Client *newOperator, Channe
                 return ;
             }
 
-            // Remove the operator from the channel
             newOperator->RPL_NEWOPERATOR(*newOperator,operatorClient ,channel->getName(), true, channel->getMembers());
             channel->removeOperator(newOperator);
 

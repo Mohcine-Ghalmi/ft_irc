@@ -22,7 +22,7 @@ std::string Replies::RPL_CREATED(const std::string &serverName, const std::strin
     time_t now = time(0);
     struct tm *timeinfo = localtime(&now);
     char buffer[80];
-    strftime(buffer, 80, "%c", timeinfo); // Format date/time
+    strftime(buffer, 80, "%c", timeinfo);
 
     ss << ":" << serverName << " 003 " << nickName
        << " :This server was created " << buffer << "\r\n";
@@ -32,8 +32,8 @@ std::string Replies::RPL_CREATED(const std::string &serverName, const std::strin
 std::string Replies::RPL_MYINFO(const std::string &serverName, const std::string &nickName) {
     std::stringstream ss;
 
-    std::string userModes = "iwso";      // Example user modes
-    std::string channelModes = "mtov";   // Example channel modes
+    std::string userModes = "iwso"; 
+    std::string channelModes = "mtov";
 
     ss << ":" << serverName << " 004 " << nickName << " " << serverName << " 1.0 " << userModes << " " << channelModes << "\r\n";
     return ss.str();
@@ -68,9 +68,3 @@ std::string Replies::ERR_PASSWDMISMATCH(const std::string &clientNick) {
     return ss.str();
 }
 
-
-// std::string ERR_NEEDMOREPARAMS(int clientSocket) {
-//     std::ostringstream oss;
-//     oss << clientSocket << " 461 :Not enough parameters";
-//     return oss.str();
-// }

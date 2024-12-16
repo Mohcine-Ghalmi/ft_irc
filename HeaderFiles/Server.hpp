@@ -14,7 +14,7 @@ class Server {
         std::string port;
         int serverSocket;
         std::string password;
-        std::vector<Client> clients;  // Store clients connected to the server
+        std::vector<Client> clients;
     public:
         std::map<std::string, Channel> channels;
         Server(int argc, char **argv);
@@ -28,8 +28,8 @@ class Server {
 
         void checkArgs(int argc, char **argv);
         void acceptConnection();
-        void handleClientMessage(Client &client, const std::string &message); // for parsing and command handling
-        void processClienstMessage(fd_set readfds);// for getting message for client and send it to handleClientMessage
+        void handleClientMessage(Client &client, const std::string &message);
+        void processClienstMessage(fd_set readfds);
 
 
         bool processPassCommand(Client &client, const std::string &message);
@@ -46,16 +46,15 @@ class Server {
         bool processPartCommand(Client &client, const std::string &message);
         bool processKICKCommand(Client &operatorClient, const std::string &message);
         bool processTOPICcommand(Client &operatorClient, const std::string &message);
-        //
+
         bool checkInvitesToChannel(Client &operatorClient, Channel *channel, std::string &channelName, Client *userInvited);
 
         Channel* getChannel(const std::string &channelName);
         Channel* createChannel(const std::string &channelName);
-        bool joinChannel(Client &client, const std::string &channelName,const std::string &key); // JOIN
-        bool leaveChannel(Client &client, const std::string &channelName); // PART
+        bool joinChannel(Client &client, const std::string &channelName,const std::string &key);
+        bool leaveChannel(Client &client, const std::string &channelName);
         void sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText);
 
-        // helpers
         bool proccessCommandHelper(std::string cmd, std::string dif);
 };
 
