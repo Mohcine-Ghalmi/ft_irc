@@ -151,6 +151,9 @@ bool Server::setUpClient(Client &client) {
     }
     client.sendReply(001, client);
     client.sendReply(002, client);
+    client.sendReply(003, client);
+    client.sendReply(004, client);
+    client.sendReply(005, client);
     client.authenticate();
     return true;
 }

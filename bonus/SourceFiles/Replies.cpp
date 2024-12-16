@@ -55,7 +55,7 @@ std::string Replies::RPL_ISUPPORT(const std::string& serverName) {
              << "CHARSET=utf-8 "              // Character encoding
              << "CHANNELLEN=50 "              // Max length for a channel name
              << "SAFELIST "                   // Indicates support for the /LIST command without flooding
-             << ":are supported by this server";
+             << ":are supported by this server\r\n";
 
     return response.str();
 }
