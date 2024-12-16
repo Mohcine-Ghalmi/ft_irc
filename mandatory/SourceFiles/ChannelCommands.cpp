@@ -36,7 +36,7 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     ss >> targetList;
     std::getline(ss, messageText);
     if (!messageText.empty() && messageText[0] == ' ')
-        messageText = messageText.substr(1);
+        messageText = messageText.substr(2);
     std::stringstream targetStream(targetList);
     std::string targetNick;
     removeCarriageReturn(messageText);
