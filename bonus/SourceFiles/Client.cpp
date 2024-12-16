@@ -299,11 +299,12 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, std::str
         reason = "behave yourself please";
 
     std::string kickMessage =
-        ":" + client.getNickName() +
+        ":" + getNickName() +          
+        "!~" + getUserName() +
+        "@" + getHostname() +           
         " KICK " + channelName +
         " " + client.getNickName() +
         " :" + reason + "\r\n";
 
     send(client.getSocket(), kickMessage.c_str(), kickMessage.length(), 0);
 }
-

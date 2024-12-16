@@ -73,6 +73,7 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
 
             case 't':
                 channel->setTopicRestriction((action == '+') ? 1 : 0);
+                sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 't');
                 break;
 
             case 'k':

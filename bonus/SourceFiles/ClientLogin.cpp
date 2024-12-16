@@ -48,7 +48,6 @@ bool Server::isNickTaken(std::string &nick) {
     return false;
 }
 
-
 bool isValidNick(const std::string &nickname) {
     if (nickname.empty() || nickname[0] == '$' || nickname[0] == ':')
         return false;
@@ -156,24 +155,6 @@ bool Server::setUpClient(Client &client) {
     client.sendReply(005, client);
     client.authenticate();
     return true;
-}
-
-void Server::updateNickUser(Client &client) {
-    std::vector<std::string> messages = splitMessages(client.getBuffer());
-
-    for (std::vector<std::string>::size_type i = 0; i < messages.size(); ) {
-        const std::string &message = messages[i];
-
-        if (processNickCommand(client, message)) {
-            messages.erase(messages.begin() + i);
-            client.sendReply(001, client);
-            continue;
-        } else if (processUserCommand(client, message)) {
-            messages.erase(messages.begin() + i);
-            continue;
-        } else
-            ++i;
-    }
 }
 
 void sendCapResponse(int clientSocket) {

@@ -168,7 +168,7 @@ bool Server::processKICKCommand(Client &operatorClient, const std::string &messa
         if (channel->getMembers().find(user) != channel->getMembers().end()) {
             Client *clientKicked = getClientByNick(user);
             channel->getMembers().erase(user);
-            clientKicked->RPL_KICKED(*clientKicked, channelName, reason);
+            operatorClient.RPL_KICKED(*clientKicked, channelName, reason);
             sendkickRepleyToChannel(operatorClient, *channel, user);
             leaveChannel(*clientKicked, channel->getName());
             channel->removeOperator(clientKicked);

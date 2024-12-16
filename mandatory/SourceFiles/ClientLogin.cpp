@@ -158,24 +158,6 @@ bool Server::setUpClient(Client &client) {
     return true;
 }
 
-void Server::updateNickUser(Client &client) {
-    std::vector<std::string> messages = splitMessages(client.getBuffer());
-
-    for (std::vector<std::string>::size_type i = 0; i < messages.size(); ) {
-        const std::string &message = messages[i];
-
-        if (processNickCommand(client, message)) {
-            messages.erase(messages.begin() + i);
-            client.sendReply(001, client);
-            continue;
-        } else if (processUserCommand(client, message)) {
-            messages.erase(messages.begin() + i);
-            continue;
-        } else
-            ++i;
-    }
-}
-
 void sendCapResponse(int clientSocket) {
     std::string capResponse = ":localhost CAP * LS :\r\n"; // sending Empty CAP List (do not support any advanced features)
 

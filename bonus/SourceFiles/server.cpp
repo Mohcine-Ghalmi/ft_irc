@@ -145,7 +145,6 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 sendHellGate(client.getSocket());
                 LOG_SERVER("Client setup completed successfully for " << client.getNickName());
             } else if (client.isAuthenticated()) {
-                updateNickUser(client);
                 if (processPrivMsgCommand(client, message)) {
                     LOG_INFO("message sent");}
                 else if (processJoinCommand(client, message)) {

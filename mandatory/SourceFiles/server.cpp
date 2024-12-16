@@ -145,20 +145,22 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 sendHellGate(client.getSocket());
                 LOG_SERVER("Client setup completed successfully for " << client.getNickName());
             } else if (client.isAuthenticated()) {
-                updateNickUser(client);
                 if (processPrivMsgCommand(client, message)) {
-                    LOG_INFO("message sent");
-                } else if (processJoinCommand(client, message)) {
+                    LOG_INFO("message sent");}
+                else if (processJoinCommand(client, message)) {
                     LOG_INFO("Joining done");
-                } else if (processModeCommand(client, message)) {
+                }
+                else if (processModeCommand(client, message)) {
                     LOG_INFO("Mode Set");
-                } else if (processINVITECommand(client, message)) {
+                }
+                else if (processINVITECommand(client, message)) {
                     LOG_INFO("Invite sent");
                 } else if (processPartCommand(client, message)) {
                     LOG_INFO("Part sent");
                 } else if (processKICKCommand(client, message)) {
                     LOG_INFO("Part sent");
-                } else if (processTOPICcommand(client, message)) {
+                }
+                else if (processTOPICcommand(client, message)) {
                     LOG_INFO("Topic set");
                 }
             }
