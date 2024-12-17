@@ -46,7 +46,7 @@ std::string Replies::RPL_ISUPPORT(const std::string& serverName) {
              << "CHANTYPES=#& "               // Supported channel prefixes
              << "PREFIX=(ov)@+ "              // Operator/voice prefixes
              << "MODES=4 "                    // Max modes that can be set in a single command
-             << "CHANLIMIT=#&:10 "            // Max number of channels a user can join
+             << "CHANLIMIT=#&:2 "            // Max number of channels a user can join
              << "NICKLEN=9 "                  // Max nickname length
              << "TOPICLEN=390 "               // Max topic length
              << "KICKLEN=390 "                // Max kick reason length

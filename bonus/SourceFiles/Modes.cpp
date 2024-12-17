@@ -119,6 +119,24 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 }
                 break;
 
+            case 'l':
+                if (action == '+') {
+                    if (paramsInc < params.size()) {
+                        int userLimit = std::stoi(params[paramsInc++]);
+                        if (userLimit > 0) {
+                            channel->setUserLimit(userLimit);
+                            sendModeIRepleyToChannel_TMP(operatorClient, *channel, 1, 'l');
+                        } else {
+                            LOG_ERROR("Invalid user limit");
+                        }
+                    } else {
+                        LOG_ERROR("User limit requires a parameter");
+                    }
+                } else if (action == '-') {
+                    channel->setUserLimit(0);
+                    sendModeIRepleyToChannel_TMP(operatorClient, *channel, 0, 'l');
+                }
+                break;
             default:
                 LOG_ERROR("Unknown mode: " << mode);
                 operatorClient.ERR_UNKNOWNMODE(operatorClient ,channelName , mode);

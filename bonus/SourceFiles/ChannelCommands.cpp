@@ -312,6 +312,8 @@ bool Server::leaveChannel(Client &client, const std::string &channelName) {
             channels.erase(channelName);
         if (channel->getOperators().size() == 0) {
             Client *op = getClientByNick(channel->getMembers().begin()->second.getNickName());
+            if (!op)
+                return false;
             channel->addOperator(op);
             op->RPL_NEWOPERATOR(*op, client, channel->getName(), false, channel->getMembers());
         }
@@ -354,15 +356,18 @@ bool Server::joinChannel(Client& client, const std::string& channelName, const s
         return false;
     }
 
-    if (channel->getMembers().empty())
-        channel->addOperator(&client);
+    if (channel->getUserLimit() == 0 || channel->getMembers().size() < (size_t)channel->getUserLimit()) {
+        if (channel->getMembers().empty())
+            channel->addOperator(&client);
 
-    channel->addMember(&client);
-    client.RPL_NAMREPLY(client, channel->getName(), channel->getMembers(), channel->getOperators());
+        channel->addMember(&client);
+        client.RPL_NAMREPLY(client, channel->getName(), channel->getMembers(), channel->getOperators());
 
-    if (!channel->getTopic().empty())
-        client.RPL_TOPIC(client, channel->getName(), channel->getTopicSetter());
+        if (!channel->getTopic().empty())
+            client.RPL_TOPIC(client, channel->getName(), channel->getTopicSetter());
 
-    LOG_SERVER("client joined " << channel->getName() << " client number " << channel->getMembers().size());
+        LOG_SERVER("client joined " << channel->getName() << " client number " << channel->getMembers().size());
+    } else
+        LOG_INFO("User limite Reached");
     return true;
 }
