@@ -132,6 +132,14 @@ std::vector<std::string> splitByDelimiter(const std::string &input, const std::s
     return tokens;
 }
 
+void Server::sendUnknownCommandReply(Client &client,const std::string &command) {
+    std::string serverName = "localhost";
+    std::string commandCarriage = command;
+    removeCarriageReturn(commandCarriage);
+    std::string reply = ":" + serverName + " 421 " + client.getNickName() + " " + commandCarriage + " Unknown command\r\n";
+    send(client.getSocket(), reply.c_str(), reply.length(), 0);
+}
+
 void Server::handleClientMessage(Client &client, const std::string &message) {
     client.appendToBuffer(message);
     if (hasNewline(message)) {
@@ -162,7 +170,11 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 }
                 else if (processTOPICcommand(client, message)) {
                     LOG_INFO("Topic set");
+                } else {
+                    sendUnknownCommandReply(client, message);
+                    LOG_INFO("command not found");
                 }
+
             }
             client.clearBuffer();
         }

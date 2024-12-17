@@ -1,16 +1,24 @@
 #include "../HeaderFiles/Server.hpp"
 
-void Server::sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText) {
+void Server::sendErrCannotSendToChan(Client &client, const std::string &channelName) {
+    std::string errorMsg = 
+        ": 404 " + channelName + 
+        " " + client.getNickName() + " :Cannot send to channel\r\n";
+    send(client.getSocket(), errorMsg.c_str(), errorMsg.length(), 0);
+}
+
+bool Server::sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText) {
     Channel* channel = getChannel(channelName);
     if (!channel) {
         LOG_SERVER("channel doesn't exist");
         sender.ERR_NOSUCHCHANNEL(sender, channelName);
-        return;
+        return false;
     }
 
     if (!channel->isMember(&sender)) {
+        sendErrCannotSendToChan(sender, channelName);
         LOG_SERVER("client is not in the channel");
-        return;
+        return false;
     }
 
     std::string msg = (messageText[0] == ':') ? messageText.substr(1) : messageText;
@@ -26,6 +34,7 @@ void Server::sendMessageToChannel(Client &sender, const std::string &channelName
             send(targetClient.getSocket(), formattedMessage.str().c_str(), formattedMessage.str().length(), 0);
         }
     }
+    return true;
 }
 
 bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
@@ -46,20 +55,25 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     removeCarriageReturn(messageText);
     while (std::getline(targetStream, targetNick, ',')) {
         if (targetNick[0] == '#') {
-            Channel *targetChannel = getChannel(targetNick);
-            if (targetChannel)
-                sendMessageToChannel(sender, targetNick, messageText);
-        }
-        else {
+            if (!sendMessageToChannel(sender, targetNick, messageText))
+                continue;
+            else
+                LOG_SERVER("Message sent successfully to " + targetList);
+        } else {
             Client *targetClient = getClientByNick(targetNick);
             if (targetClient) {
+                if (targetClient->getNickName() == sender.getNickName()) {
+                    std::string reply = ":" + sender.getNickName() + " 502 " + sender.getNickName() + " :Cannot send a message to yourself\r\n";
+                    send(sender.getSocket(), reply.c_str(), reply.length(), 0);
+                    continue;
+                }
                 std::string formattedMessage = ":" + sender.getNickName() + " PRIVMSG " + targetNick + " :" + messageText + "\r\n";
                 send(targetClient->getSocket(), formattedMessage.c_str(), formattedMessage.length(), 0);
+                LOG_SERVER("Message sent successfully to " + targetList);
             } else
                 sender.ERR_NOSUCHNICK(sender, targetNick);
         }
     }
-    LOG_SERVER("Message sent successfully to " + targetList);
     return true;
 }
 

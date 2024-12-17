@@ -53,12 +53,14 @@ class Server {
         Channel* createChannel(const std::string &channelName);
         bool joinChannel(Client &client, const std::string &channelName,const std::string &key);
         bool leaveChannel(Client &client, const std::string &channelName);
-        void sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText);
+        bool sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText);
 
         bool proccessCommandHelper(std::string cmd, std::string dif);
 
         void RPL_BOTCALLED(Client &client, const std::string &channelName, std::stringstream &Weather, bool isClient);
         void ERR_BOTCALLED(Client &client, const std::string &channelName,const std::string &Weather, bool isClient);
+        void sendErrCannotSendToChan(Client &client, const std::string &channelName);
+        void sendUnknownCommandReply(Client &client, const std::string &command);
 };
 
 void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode);
