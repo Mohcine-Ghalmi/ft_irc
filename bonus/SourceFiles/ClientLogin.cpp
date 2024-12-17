@@ -121,7 +121,17 @@ bool Server::processUserCommand(Client &client, const std::string &message) {
     return false;
 }
 
-bool Server::setUpClient(Client &client) {
+int findLoginInfo(std::string messag) {
+    if (messag.find("NICK"))
+        return 1;
+    if (messag.find("USER"))
+        return (1);
+    if (messag.find("PASS"))
+        return (1);
+    return 0;
+}
+
+bool Server::setUpClient(Client &client, int &flag) {
     std::vector<std::string> messages = splitMessages(client.getBuffer());
 
     if (client.isAuthenticated())
@@ -129,7 +139,7 @@ bool Server::setUpClient(Client &client) {
 
     for (std::vector<std::string>::size_type i = 0; i < messages.size(); ) {
         const std::string &message = messages[i];
-
+        flag += findLoginInfo(message); 
         if (processPassCommand(client, message)) {
             messages.erase(messages.begin() + i);
             continue;

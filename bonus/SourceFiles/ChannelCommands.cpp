@@ -49,10 +49,11 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     ss >> targetList;
     std::getline(ss, messageText);
     if (!messageText.empty() && messageText[0] == ' ')
-        messageText = messageText.substr(2);
+        messageText = (messageText[1] == ':') ? messageText.substr(2) : messageText;
     std::stringstream targetStream(targetList);
     std::string targetNick;
     removeCarriageReturn(messageText);
+    std::cout << "{" << messageText << "}" << std::endl;
     while (std::getline(targetStream, targetNick, ',')) {
         if (targetNick[0] == '#') {
             if (!sendMessageToChannel(sender, targetNick, messageText))
@@ -293,7 +294,6 @@ bool Server::processPartCommand(Client &client, const std::string &message) {
     std::istringstream ss(message.substr(5));
     std::string channelName;
     ss >> channelName;
-
     if (leaveChannel(client, channelName)) {
         LOG_INFO("client " << client.getNickName() << "is out from " << channelName);
     }

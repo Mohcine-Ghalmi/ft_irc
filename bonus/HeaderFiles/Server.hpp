@@ -24,18 +24,17 @@ class Server {
         int getServerSocket();
         Client* getClientByNick(const std::string &targetNick);
 
-        bool setUpClient(Client &client);
+        bool setUpClient(Client &client, int &flag);
 
         void checkArgs(int argc, char **argv);
         void acceptConnection();
-        void handleClientMessage(Client &client, const std::string &message);
+        void handleClientMessage(Client &client, const std::string &message, int &flag);
         void processClienstMessage(fd_set readfds);
 
 
         bool processPassCommand(Client &client, const std::string &message);
         bool processNickCommand(Client &client, const std::string &message);
         bool processUserCommand(Client &client, const std::string &message);
-        void updateNickUser(Client &client);
         bool isNickTaken(std::string &nick);
         bool processPrivMsgCommand(Client &sender, const std::string &message);
         bool processJoinCommand(Client &client, const std::string &message);

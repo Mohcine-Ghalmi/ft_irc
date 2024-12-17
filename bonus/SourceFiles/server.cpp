@@ -140,7 +140,7 @@ void Server::sendUnknownCommandReply(Client &client,const std::string &command) 
     send(client.getSocket(), reply.c_str(), reply.length(), 0);
 }
 
-void Server::handleClientMessage(Client &client, const std::string &message) {
+void Server::handleClientMessage(Client &client, const std::string &message, int &flag) {
     client.appendToBuffer(message);
     if (hasNewline(message)) {
         LOG_CLIENT(client.getSocket(), message);
@@ -149,7 +149,7 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
         else if (message.find("PING") == 0)
             ping(message, client.getSocket());
         else {
-            if (setUpClient(client)) {
+            if (setUpClient(client, flag)) {
                 sendHellGate(client.getSocket());
                 LOG_SERVER("Client setup completed successfully for " << client.getNickName());
             } else if (client.isAuthenticated()) {
@@ -178,8 +178,13 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
     }
 }
 
+bool hasCarriageReturn(const std::string &input) {
+    return input.find('\r') != std::string::npos;
+}
+
 void Server::processClienstMessage(fd_set readfds) {
     char buffer[BUFFER_SIZE];
+    int flag = 0;
 
     for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); ) {
         memset(buffer, 0, BUFFER_SIZE);
@@ -195,8 +200,8 @@ void Server::processClienstMessage(fd_set readfds) {
                 continue;
             } else {
                 std::string clientMessage(buffer);
-                handleClientMessage(*it, clientMessage);
-                if (it->getPassword() != password && !it->getPassword().empty()) {
+                handleClientMessage(*it, clientMessage, flag);
+                if ((it->getPassword() != password && !it->getPassword().empty()) || flag == 3) {
                     close(it->getSocket());
                     it = clients.erase(it);
                     LOG_INFO(RED "client out");
