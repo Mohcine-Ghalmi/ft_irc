@@ -59,6 +59,13 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
     char action = '+';
 
     for (size_t i = 0; i < modes.length(); ++i) {
+        if (modes[i] != '-' && modes[i] != '+' && modes[i] != 'o' && modes[i] != 'k' && modes[i] != 'l' && modes[i] != 't' && modes[i] != 'i')
+        {
+            operatorClient.ERR_UNKNOWNMODE(operatorClient ,channelName , modes[i]);
+            return false;
+        }
+    }
+    for (size_t i = 0; i < modes.length(); ++i) {
         char mode = modes[i];
 
         if (mode == '+' || mode == '-') {
