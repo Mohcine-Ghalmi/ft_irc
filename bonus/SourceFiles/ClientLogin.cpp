@@ -53,7 +53,7 @@ bool isValidNick(const std::string &nickname) {
         return false;
 
     for (size_t i = 0; i < nickname.length(); i++)
-        if (nickname[i] == ' ' || nickname[i] == ',' || nickname[i] == '*' || nickname[i] == '?' || nickname[i] == '!' || nickname[i] == '@')
+        if (nickname[i] == '"' || nickname[i] == ' ' || nickname[i] == ',' || nickname[i] == '*' || nickname[i] == '?' || nickname[i] == '!' || nickname[i] == '@')
             return false;
 
     if (nickname.find('.') != std::string::npos)
@@ -163,4 +163,3 @@ void sendCapResponse(int clientSocket) {
     send(clientSocket, capResponse.c_str(), capResponse.size(), 0);
     LOG_SERVER("Sent CAP LS response to client");
 }
-
