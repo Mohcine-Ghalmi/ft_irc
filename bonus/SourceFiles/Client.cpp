@@ -299,12 +299,23 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, std::str
         reason = "behave yourself please";
 
     std::string kickMessage =
-        ":" + getNickName() +          
+        ":" + getNickName() +
         "!~" + getUserName() +
-        "@" + getHostname() +           
+        "@" + getHostname() +
         " KICK " + channelName +
         " " + client.getNickName() +
         " :" + reason + "\r\n";
 
     send(client.getSocket(), kickMessage.c_str(), kickMessage.length(), 0);
+}
+
+void Client::ERR_CHANNELISFULL(Client &client,const std::string &channel) {
+    std::stringstream ss;
+
+    // Format the reply for ERR_CHANNELISFULL (471)
+    ss << ":" << client.getNickName() << " 471 " << client.getNickName() << " "
+       << channel << " :Cannot join channel (+l)\r\n";
+
+    // Send the reply to the client who attempted to join the channel
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }

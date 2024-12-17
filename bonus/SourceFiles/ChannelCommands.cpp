@@ -368,6 +368,9 @@ bool Server::joinChannel(Client& client, const std::string& channelName, const s
 
         LOG_SERVER("client joined " << channel->getName() << " client number " << channel->getMembers().size());
     } else
+    {
         LOG_INFO("User limite Reached");
+        client.ERR_CHANNELISFULL(client, channel->getName());
+    }
     return true;
 }
