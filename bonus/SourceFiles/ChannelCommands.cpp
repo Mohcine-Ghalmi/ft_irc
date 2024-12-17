@@ -1,8 +1,8 @@
 #include "../HeaderFiles/Server.hpp"
 
 void Server::sendErrCannotSendToChan(Client &client, const std::string &channelName) {
-    std::string errorMsg = 
-        ": 404 " + channelName + 
+    std::string errorMsg =
+        ": 404 " + channelName +
         " " + client.getNickName() + " :Cannot send to channel\r\n";
     send(client.getSocket(), errorMsg.c_str(), errorMsg.length(), 0);
 }
@@ -307,8 +307,14 @@ bool Server::leaveChannel(Client &client, const std::string &channelName) {
     Channel* channel = getChannel(channelName);
     if (channel && channel->isMember(&client)) {
         channel->removeMember(&client);
+        channel->removeOperator(&client);
         if (channel->getMembers().empty())
             channels.erase(channelName);
+        if (channel->getOperators().size() == 0) {
+            Client *op = getClientByNick(channel->getMembers().begin()->second.getNickName());
+            channel->addOperator(op);
+            op->RPL_NEWOPERATOR(*op, client, channel->getName(), false, channel->getMembers());
+        }
         return true;
     }
     return false;

@@ -72,6 +72,8 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 break;
 
             case 't':
+                if ((action == '+' && channel->isTopicRestricted()) || (action == '-' && !channel->isTopicRestricted()))
+                    break ;
                 channel->setTopicRestriction((action == '+') ? 1 : 0);
                 sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 't');
                 break;
