@@ -170,9 +170,6 @@ void Server::handleClientMessage(Client &client, const std::string &message) {
                 }
                 else if (processTOPICcommand(client, message)) {
                     LOG_INFO("Topic set");
-                } else {
-                    sendUnknownCommandReply(client, message);
-                    LOG_INFO("command not found");
                 }
 
             }
