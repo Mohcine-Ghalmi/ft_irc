@@ -46,6 +46,7 @@ class Channel {
 
         void addInvitedUser(Client* client);
         void removeInvitedUser(Client* client);
+        std::map<std::string, Client>& getInvites();
         std::map<std::string, Client>& getMembers();
         std::map<std::string, Client>& getOperators();
         std::map<std::string, Client>& getInvitedUsers();

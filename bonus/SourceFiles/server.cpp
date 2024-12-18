@@ -171,7 +171,6 @@ void Server::handleClientMessage(Client &client, const std::string &message, int
                 else if (processTOPICcommand(client, message)) {
                     LOG_INFO("Topic set");
                 }
-
             }
             client.clearBuffer();
         }
@@ -180,6 +179,29 @@ void Server::handleClientMessage(Client &client, const std::string &message, int
 
 bool hasCarriageReturn(const std::string &input) {
     return input.find('\r') != std::string::npos;
+}
+
+void Server::removeUserFromChannels(const std::string &nickName) {
+    std::map<std::string, Channel>::iterator it = channels.begin();
+    while (it != channels.end()) {
+        Channel &channel = it->second;
+
+        if (channel.getMembers().count(nickName)) {
+            channel.removeMember(getClientByNick(nickName));
+            LOG_INFO("Removed " + nickName + " from channel " + channel.getName());
+        }
+
+        if (channel.getOperators().count(nickName)) {
+            channel.removeOperator(getClientByNick(nickName));
+            LOG_INFO("Removed operator " + nickName + " from channel " + channel.getName());
+        }
+
+        if (channel.getInvites().count(nickName)) {
+            channel.removeInvitedUser(getClientByNick(nickName));
+            LOG_INFO("Removed invite for " + nickName + " from channel " + channel.getName());
+        }
+        ++it;
+    }
 }
 
 void Server::processClienstMessage(fd_set readfds) {
@@ -194,6 +216,7 @@ void Server::processClienstMessage(fd_set readfds) {
                 if (bytesReceived == 0) {LOG_INFO(RED "Client disconnected ");}
                 else
                     perror("recv error");
+                removeUserFromChannels(it->getNickName());
                 close(it->getSocket());
                 clients.erase(it);
                 it = clients.begin();

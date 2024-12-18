@@ -53,6 +53,7 @@ class Server {
         bool joinChannel(Client &client, const std::string &channelName,const std::string &key);
         bool leaveChannel(Client &client, const std::string &channelName);
         bool sendMessageToChannel(Client &sender, const std::string &channelName, const std::string &messageText);
+        void removeUserFromChannels(const std::string &nickName);
 
         bool proccessCommandHelper(std::string cmd, std::string dif);
 
