@@ -39,9 +39,10 @@ Server::Server(int argc, char **argv) {
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
 
-    if (getaddrinfo(NULL, port.c_str(), &hints, &res) != 0) {
+    if (getaddrinfo((const char *)"localhost", port.c_str(), &hints, &res) != 0) {
         std::cerr << "getaddrinfo error" << std::endl;
         exit(1);
     }
@@ -62,7 +63,7 @@ Server::Server(int argc, char **argv) {
 
     freeaddrinfo(res);
 
-    if (listen(serverSocket, 10) < 0) {
+    if (listen(serverSocket, SOMAXCONN) < 0) {
         std::cerr << "Listen error" << std::endl;
         exit(1);
     }
@@ -185,7 +186,11 @@ void Server::removeUserFromChannels(const std::string &nickName) {
     std::map<std::string, Channel>::iterator it = channels.begin();
     while (it != channels.end()) {
         Channel &channel = it->second;
-        processPartCommand(*getClientByNick(nickName), "PART " + channel.getName());
+        if (channel.isMember(getClientByNick(nickName)))
+            if (processPartCommand(*getClientByNick(nickName), "PART " + channel.getName())) {
+                it = channels.begin();
+                continue;
+            }
         if (channel.getInvites().count(nickName)) {
             channel.removeInvitedUser(getClientByNick(nickName));
             LOG_INFO("Removed invite for " + nickName + " from channel " + channel.getName());
@@ -214,7 +219,7 @@ void Server::processClienstMessage(fd_set readfds) {
             } else {
                 std::string clientMessage(buffer);
                 handleClientMessage(*it, clientMessage, flag);
-                if ((it->getPassword() != password && !it->getPassword().empty()) || flag == 3) {
+                if ((it->getPassword() != password && !it->getPassword().empty())) {
                     close(it->getSocket());
                     it = clients.erase(it);
                     LOG_INFO(RED "client out");

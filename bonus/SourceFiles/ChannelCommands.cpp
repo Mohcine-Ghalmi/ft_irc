@@ -319,10 +319,10 @@ bool Server::processPartCommand(Client &client, const std::string &message) {
     std::string channelName;
     ss >> channelName;
     if (leaveChannel(client, channelName)) {
-        LOG_INFO("client " << client.getNickName() << "is out from " << channelName);
+        LOG_INFO("client " << client.getNickName() << " is out from " << channelName);
     }
     else
-        LOG_INFO( channelName << "no channel founded");
+        LOG_INFO( channelName << " no channel founded");
     return true;
 }
 
@@ -345,12 +345,17 @@ void sendUserLeftRplToChannel(Client &client, Channel *channel) {
 
 bool Server::leaveChannel(Client &client, const std::string &channelName) {
     Channel* channel = getChannel(channelName);
-    if (channel && channel->isMember(&client)) {
+    if (!channel) {
+        return false;
+    }
+    if (channel->isMember(&client)) {
         channel->removeMember(&client);
         channel->removeOperator(&client);
         sendUserLeftRplToChannel(client, channel);
-        if (channel->getMembers().empty())
+        if (channel->getMembers().size() == 0) {
             channels.erase(channelName);
+            return true;
+        }
         if (channel->getOperators().size() == 0) {
             Client *op = getClientByNick(channel->getMembers().begin()->second.getNickName());
             if (!op)
