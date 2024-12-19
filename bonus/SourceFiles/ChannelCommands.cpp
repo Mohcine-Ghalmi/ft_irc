@@ -351,6 +351,7 @@ bool Server::leaveChannel(Client &client, const std::string &channelName) {
     if (channel->isMember(&client)) {
         channel->removeMember(&client);
         channel->removeOperator(&client);
+        channel->removeInvitedUser(&client);
         sendUserLeftRplToChannel(client, channel);
         if (channel->getMembers().size() == 0) {
             channels.erase(channelName);

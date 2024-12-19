@@ -191,10 +191,10 @@ void Server::removeUserFromChannels(const std::string &nickName) {
                 it = channels.begin();
                 continue;
             }
-        if (channel.getInvites().count(nickName)) {
-            channel.removeInvitedUser(getClientByNick(nickName));
-            LOG_INFO("Removed invite for " + nickName + " from channel " + channel.getName());
-        }
+        // if (channel.getInvites().count(nickName)) {
+        //     channel.removeInvitedUser(getClientByNick(nickName));
+        //     LOG_INFO("Removed invite for " + nickName + " from channel " + channel.getName());
+        // }
         ++it;
     }
 }
@@ -210,7 +210,7 @@ void Server::processClienstMessage(fd_set readfds) {
             if (bytesReceived <= 0) {
                 if (bytesReceived == 0) {LOG_INFO(RED "Client disconnected ");}
                 else
-                    perror("recv error");
+                    LOG_ERROR("recv error");
                 removeUserFromChannels(it->getNickName());
                 close(it->getSocket());
                 clients.erase(it);
