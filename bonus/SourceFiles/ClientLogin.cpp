@@ -94,31 +94,61 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
 }
 
 bool Server::processUserCommand(Client &client, const std::string &message) {
-    if (this->proccessCommandHelper(message, "USER")) {
-        std::stringstream ss(message.substr(5));
-        std::string username, hostname, realname;
-
-        ss >> username >> hostname;
-
-        size_t realnamePos = message.find(':');
-        if (realnamePos != std::string::npos) {
-            realname = message.substr(realnamePos + 1);
-            if (!realname.empty() && (realname[realname.length() - 1] == '\r' || realname[realname.length() - 1] == '\n'))
-                realname.erase(realname.length() - 1);
-        }
-
-        if (username.empty() || hostname.empty() || realname.empty()) {
-            LOG_SERVER("Error: USER command provided without a complete value.");
-            return true;
-        }
-
-        client.setUserName(username);
-        client.setHostName(hostname);
-        client.setRealName(realname);
-        LOG_SERVER("Client USER setup: username=" + username + ", hostname=" + hostname + ", realname=" + realname);
-        return true;
+    if (client.isAuthenticated()) {
+        LOG_ERROR("USER command received after registration");
+        return false;
     }
-    return false;
+
+    if (!proccessCommandHelper(message, "USER")) {
+        client.ERR_NEEDMOREPARAMS(client, "USER");
+        LOG_ERROR("Invalid USER command format");
+        return false;
+    }
+
+    size_t colonPos = message.find(':');
+    std::string paramsPart = message.substr(5, colonPos - 5);
+    std::string realnamePart = (colonPos != std::string::npos) ? message.substr(colonPos + 1) : "";
+
+    if (!realnamePart.empty() && (realnamePart.back() == '\r' || realnamePart.back() == '\n'))
+        realnamePart.pop_back();
+
+    std::istringstream ss(paramsPart);
+    std::vector<std::string> params;
+    std::string param;
+    while (ss >> param)
+        if (params.size() < 4)
+            params.push_back(param);
+
+    if (params.size() > 3)
+        realnamePart = params[3];
+    else if (params.size() < 3) {
+        client.ERR_NEEDMOREPARAMS(client, "USER");
+        LOG_ERROR("Not enough parameters in USER command");
+        return false;
+    }
+
+    std::string username = params[0];
+    std::string hostname = params[1];
+    std::string servername = params[2];
+
+    if (username.empty()) {
+        client.ERR_NEEDMOREPARAMS(client, "USER");
+        LOG_ERROR("Username is empty");
+        return false;
+    }
+
+    if (realnamePart.empty()) {
+        client.ERR_NEEDMOREPARAMS(client, "USER");
+        LOG_ERROR("Realname is missing in USER command");
+        return false;
+    }
+
+    client.setUserName(username);
+    client.setHostName(hostname);
+    client.setRealName(realnamePart);
+
+    LOG_SERVER("Processed USER command for client: username=" + username + ", hostname=" + hostname + ", servername=" + servername + ", realname=" + realnamePart);
+    return true;
 }
 
 int findLoginInfo(std::string messag) {

@@ -12,7 +12,6 @@ std::string getWeather(const std::string& city) {
     std::string apiKey = "6062e89453f4af76f7635ad3fafa8a78";
     std::string url = "http://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=" + apiKey + "&units=metric";
     CURL* curl;
-    CURLcode res;
     std::string readBuffer;
 
     curl = curl_easy_init();
@@ -20,7 +19,7 @@ std::string getWeather(const std::string& city) {
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        res = curl_easy_perform(curl);
+        curl_easy_perform(curl);
         curl_easy_cleanup(curl);
     }
 
