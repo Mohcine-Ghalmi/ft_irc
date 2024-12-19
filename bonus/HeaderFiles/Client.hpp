@@ -102,6 +102,8 @@ class Client{
         void ERR_UNKNOWNMODE(Client &client, const std::string &channelName, char modechar);
         void ERR_BADCHANNELKEY_CHANNEL(Client &client, const std::string &channelName);
         void ERR_CHANNELISFULL(Client &client,const std::string &channel);
+        void RPL_NOTOPIC(Client &client,const std::string &channel);
+        void ERR_NOTEXTTOSEND();
         //
         // void RPL_BOTCALLED(Client &client, const std::string &channelName, std::stringstream &Weather, bool isClient);
         // void ERR_BOTCALLED(Client &client, const std::string &channelName,const std::string &Weather, bool isClient);

@@ -81,8 +81,7 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
 
         if (isNickTaken(newNick)) {
             LOG_SERVER("Error: Nickname already taken.");
-            if (client.isAuthenticated())
-                client.ERR_NICKNAMEINUSE(client, newNick);
+            client.ERR_NICKNAMEINUSE(client, newNick);
             return false;
         }
 
@@ -163,7 +162,7 @@ bool Server::setUpClient(Client &client, int &flag) {
 
     for (std::vector<std::string>::size_type i = 0; i < messages.size(); ) {
         const std::string &message = messages[i];
-        flag += findLoginInfo(message); 
+        flag += findLoginInfo(message);
         if (processPassCommand(client, message)) {
             messages.erase(messages.begin() + i);
             continue;

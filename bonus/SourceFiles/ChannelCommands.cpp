@@ -37,6 +37,14 @@ bool Server::sendMessageToChannel(Client &sender, const std::string &channelName
     return true;
 }
 
+void trim(std::string& str) {
+    // Remove leading spaces/tabs
+    str.erase(0, str.find_first_not_of(" \t"));
+
+    // Remove trailing spaces/tabs
+    str.erase(str.find_last_not_of(" \t") + 1);
+}
+
 bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     if (!this->proccessCommandHelper(message, "PRIVMSG"))
         return false;
@@ -48,12 +56,17 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     std::string targetList, messageText;
     ss >> targetList;
     std::getline(ss, messageText);
+    trim(messageText);
     if (!messageText.empty() && messageText[0] == ' ')
         messageText = (messageText[1] == ':') ? messageText.substr(2) : messageText;
+    if ((messageText.length() == 1 && messageText[0] == ':')  || messageText.empty())
+    {
+        sender.ERR_NOTEXTTOSEND();
+        return false;
+    }
     std::stringstream targetStream(targetList);
     std::string targetNick;
     removeCarriageReturn(messageText);
-    std::cout << "{" << messageText << "}" << std::endl;
     while (std::getline(targetStream, targetNick, ',')) {
         if (targetNick[0] == '#') {
             if (!sendMessageToChannel(sender, targetNick, messageText))
@@ -203,10 +216,15 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
     std::istringstream ss(message);
     std::string command, channelName, topic;
     ss >> command >> channelName;
+    if (channelName.empty() && topic.empty())
+    {
+        operatorClient.ERR_NEEDMOREPARAMS(operatorClient, command);
+        return false;
+    }
     if (ss.str().find(":") != std::string::npos)
         topic = ss.str().substr(ss.str().find(":") + 1, ss.str().length());
     Channel *channel = getChannel(channelName);
-    if (!channel) {
+    if (channelName[0] != '#' || !channel) {
         operatorClient.ERR_NOSUCHCHANNEL(operatorClient, channelName);
         return false;
     }
@@ -216,8 +234,14 @@ bool Server::processTOPICcommand(Client &operatorClient, const std::string &mess
         return false;
     }
     removeCarriageReturn(topic);
-    if (topic.empty())
+    if (topic.empty()) {
+        if (!channel->getTopic().empty()) {
+            operatorClient.RPL_TOPIC(operatorClient, channel->getName(), channel->getTopic());
+            return true;
+        }
+        operatorClient.RPL_NOTOPIC(operatorClient, channelName);
         return false;
+    }
     else {
         if (channel->getTopic() == topic)
             return true;

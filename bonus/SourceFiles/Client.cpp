@@ -201,6 +201,12 @@ void Client::ERR_INVITEONLYCHAN(Client &client, const std::string &channel) {
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
+void Client::ERR_NOTEXTTOSEND() {
+    std::stringstream ss;
+
+    ss << ":" << getNickName() << " 412 " << " :No text to send\r\n";
+    send(getSocket(), ss.str().c_str(), ss.str().length(), 0);
+}
 
 void Client::ERR_USERONCHANNEL(Client &client, const std::string &nick, const std::string &channelName)
 {
@@ -307,6 +313,14 @@ void Client::RPL_KICKED(Client &client, const std::string &channelName, std::str
         " :" + reason + "\r\n";
 
     send(client.getSocket(), kickMessage.c_str(), kickMessage.length(), 0);
+}
+
+void Client::RPL_NOTOPIC(Client &client,const std::string &channel) {
+    //RPL_NOTOPIC (331)
+    std::stringstream ss;
+
+    ss << ":" << channel << " 331 " << ":No topic is set\r\n";
+    send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
 void Client::ERR_CHANNELISFULL(Client &client,const std::string &channel) {
