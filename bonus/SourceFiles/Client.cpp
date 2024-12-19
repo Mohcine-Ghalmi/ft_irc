@@ -3,7 +3,9 @@
 
 Client::Client(int socket) : clientSocket(socket),  authenticated(false), password("") {}
 
-Client::Client(const Client &client) : clientSocket(client.clientSocket), nickName(client.nickName), userName(client.userName), hostName(client.hostName), realName(client.realName), authenticated(client.authenticated), buffer(client.buffer), password(client.password), replies(client.replies) { }
+Client::Client(const Client &client) : clientSocket(client.clientSocket), nickName(client.nickName), userName(client.userName), \
+                                        hostName(client.hostName), realName(client.realName), authenticated(client.authenticated), \
+                                        buffer(client.buffer), password(client.password), replies(client.replies) { }
 
 Client::~Client() { /**close(clientSocket);**/}
 void Client::clearBuffer() { buffer.clear();}
@@ -142,8 +144,8 @@ void Client::RPL_INVITE(Client &client, const std::string &invitedUser, const st
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-#include <set>
-void Client::broadcastModeChange(const std::string &setterNick, const std::string &mode, const std::string &targetNick,  std::map<std::string, Client> &members, const std::string &channelName) {
+void Client::broadcastModeChange(const std::string &setterNick, const std::string &mode, const std::string &targetNick, \
+                                std::map<std::string, Client> &members, const std::string &channelName) {
     std::stringstream ss;
     ss << ":" << setterNick << " MODE " << channelName << " " << mode << " " << targetNick << "\r\n";
 
@@ -280,7 +282,8 @@ void Client::RPL_INVITESENTTO(Client &client, const std::string &channelName, co
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-void Client::RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std::string &channelName, bool remove, std::map<std::string, Client> &members) {
+void Client::RPL_NEWOPERATOR(Client &newOperator, Client &oldOperator, const std::string &channelName, bool remove, \
+                        std::map<std::string, Client> &members) {
     std::stringstream ss;
 
     ss << ":" << oldOperator.getNickName() << "!" << oldOperator.getUserName()

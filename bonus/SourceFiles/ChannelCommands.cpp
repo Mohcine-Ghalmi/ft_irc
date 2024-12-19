@@ -357,6 +357,23 @@ bool Server::processJoinCommand(Client &client, const std::string &message) {
         }
         removeCarriageReturn(channelName);
         removeCarriageReturn(key);
+
+        std::string realName;
+        unsigned long pos = channelName.find(" ");
+        if (pos == std::string::npos) realName = channelName;
+        else realName = channelName.substr(0, pos);
+
+        if (realName.empty() || (realName[0] != '#' && realName[0] != '&')) {
+            LOG_ERROR("Invalid channel name: must start with '#'.");
+            client.ERR_NOSUCHCHANNEL(client, realName);
+            return false;
+        }
+
+        if (realName.find(" ") != std::string::npos || realName.find(",") != std::string::npos) {
+            LOG_ERROR("Invalid channel name: spaces or , are not allowed.");
+            client.ERR_NOSUCHCHANNEL(client, realName);
+            return false;
+        }
         if (joinChannel(client, channelName, key))
             return true;
     }

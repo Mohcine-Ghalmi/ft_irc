@@ -142,38 +142,38 @@ void Server::sendUnknownCommandReply(Client &client,const std::string &command) 
 
 void Server::handleClientMessage(Client &client, const std::string &message, int &flag) {
     client.appendToBuffer(message);
-    if (hasNewline(message)) {
-        LOG_CLIENT(client.getSocket(), message);
-        if (message.find("CAP LS 302") != std::string::npos)
+    if (hasNewline(client.getBuffer())) {
+        LOG_CLIENT(client.getSocket(), client.getBuffer());
+        if (client.getBuffer().find("CAP LS 302") != std::string::npos)
             sendCapResponse(client.getSocket());
-        else if (message.find("PING") == 0)
-            ping(message, client.getSocket());
+        else if (client.getBuffer().find("PING") == 0)
+            ping(client.getBuffer(), client.getSocket());
         else {
             if (setUpClient(client, flag)) {
                 sendHellGate(client.getSocket());
                 LOG_SERVER("Client setup completed successfully for " << client.getNickName());
             } else if (client.isAuthenticated()) {
-                if (processPrivMsgCommand(client, message)) {
+                if (processPrivMsgCommand(client, client.getBuffer())) {
                     LOG_INFO("message sent");}
-                else if (processJoinCommand(client, message)) {
+                else if (processJoinCommand(client, client.getBuffer())) {
                     LOG_INFO("Joining done");
                 }
-                else if (processModeCommand(client, message)) {
+                else if (processModeCommand(client, client.getBuffer())) {
                     LOG_INFO("Mode Set");
                 }
-                else if (processINVITECommand(client, message)) {
+                else if (processINVITECommand(client, client.getBuffer())) {
                     LOG_INFO("Invite sent");
-                } else if (processPartCommand(client, message)) {
+                } else if (processPartCommand(client, client.getBuffer())) {
                     LOG_INFO("Part sent");
-                } else if (processKICKCommand(client, message)) {
+                } else if (processKICKCommand(client, client.getBuffer())) {
                     LOG_INFO("Part sent");
                 }
-                else if (processTOPICcommand(client, message)) {
+                else if (processTOPICcommand(client, client.getBuffer())) {
                     LOG_INFO("Topic set");
                 }
             }
-            client.clearBuffer();
         }
+        client.clearBuffer();
     }
 }
 
