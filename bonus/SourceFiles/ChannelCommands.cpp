@@ -326,12 +326,29 @@ bool Server::processPartCommand(Client &client, const std::string &message) {
     return true;
 }
 
+void sendUserLeftRplToChannel(Client &client, Channel *channel) {
+    std::stringstream ss;
+    std::stringstream ss1;
+
+    ss << ":" << client.getNickName()
+       << " 322 " << channel->getName()
+       << " :" << " has left the channel\r\n";
+    ss1 << ":" << client.getNickName()
+       << " PART " << channel->getName()
+       << " :" << "has left the channel\r\n";
+    for (std::map<std::string, Client>::iterator it = channel->getMembers().begin(); it != channel->getMembers().end(); ++it) {
+        Client targetClient = it->second;
+        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
+    }
+    send(client.getSocket(), ss1.str().c_str(), ss1.str().length(), 0);
+}
 
 bool Server::leaveChannel(Client &client, const std::string &channelName) {
     Channel* channel = getChannel(channelName);
     if (channel && channel->isMember(&client)) {
         channel->removeMember(&client);
         channel->removeOperator(&client);
+        sendUserLeftRplToChannel(client, channel);
         if (channel->getMembers().empty())
             channels.erase(channelName);
         if (channel->getOperators().size() == 0) {

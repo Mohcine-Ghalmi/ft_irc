@@ -185,17 +185,7 @@ void Server::removeUserFromChannels(const std::string &nickName) {
     std::map<std::string, Channel>::iterator it = channels.begin();
     while (it != channels.end()) {
         Channel &channel = it->second;
-
-        if (channel.getMembers().count(nickName)) {
-            channel.removeMember(getClientByNick(nickName));
-            LOG_INFO("Removed " + nickName + " from channel " + channel.getName());
-        }
-
-        if (channel.getOperators().count(nickName)) {
-            channel.removeOperator(getClientByNick(nickName));
-            LOG_INFO("Removed operator " + nickName + " from channel " + channel.getName());
-        }
-
+        processPartCommand(*getClientByNick(nickName), "PART " + channel.getName());
         if (channel.getInvites().count(nickName)) {
             channel.removeInvitedUser(getClientByNick(nickName));
             LOG_INFO("Removed invite for " + nickName + " from channel " + channel.getName());
@@ -264,4 +254,3 @@ void Server::start() {
         processClienstMessage(readfds);
     }
 }
-
