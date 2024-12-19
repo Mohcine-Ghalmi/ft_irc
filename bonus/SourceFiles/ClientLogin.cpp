@@ -94,19 +94,11 @@ bool Server::processNickCommand(Client &client, const std::string &message) {
 }
 
 bool Server::processUserCommand(Client &client, const std::string &message) {
-    if (client.isAuthenticated()) {
-        LOG_ERROR("USER command received after registration");
+    if (!this->proccessCommandHelper(message, "USER"))
         return false;
-    }
-
-    if (!proccessCommandHelper(message, "USER")) {
-        client.ERR_NEEDMOREPARAMS(client, "USER");
-        LOG_ERROR("Invalid USER command format");
-        return false;
-    }
 
     size_t colonPos = message.find(':');
-    std::string paramsPart = message.substr(5, colonPos - 5);
+    std::string paramsPart = message.substr(5, colonPos - 5); // Parameters before ':'
     std::string realnamePart = (colonPos != std::string::npos) ? message.substr(colonPos + 1) : "";
 
     if (!realnamePart.empty() && (realnamePart.back() == '\r' || realnamePart.back() == '\n'))
@@ -119,13 +111,14 @@ bool Server::processUserCommand(Client &client, const std::string &message) {
         if (params.size() < 4)
             params.push_back(param);
 
-    if (params.size() > 3)
+    if (params.size() == 4 && colonPos == std::string::npos)
         realnamePart = params[3];
     else if (params.size() < 3) {
         client.ERR_NEEDMOREPARAMS(client, "USER");
         LOG_ERROR("Not enough parameters in USER command");
         return false;
-    }
+    } else if (params.size() >= 4 && colonPos != std::string::npos)
+        realnamePart = (colonPos != std::string::npos) ? realnamePart : params[3];
 
     std::string username = params[0];
     std::string hostname = params[1];
@@ -150,6 +143,7 @@ bool Server::processUserCommand(Client &client, const std::string &message) {
     LOG_SERVER("Processed USER command for client: username=" + username + ", hostname=" + hostname + ", servername=" + servername + ", realname=" + realnamePart);
     return true;
 }
+
 
 int findLoginInfo(std::string messag) {
     if (messag.find("NICK"))
