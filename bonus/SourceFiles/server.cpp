@@ -186,6 +186,7 @@ void Server::removeUserFromChannels(const std::string &nickName) {
     std::map<std::string, Channel>::iterator it = channels.begin();
     while (it != channels.end()) {
         Channel &channel = it->second;
+        std::cout << "channel.getName() : " << channel.getName() << std::endl;
         if (channel.isMember(getClientByNick(nickName)))
             if (processPartCommand(*getClientByNick(nickName), "PART " + channel.getName())) {
                 it = channels.begin();
@@ -210,10 +211,7 @@ void Server::processClienstMessage(fd_set readfds) {
             if (bytesReceived <= 0) {
                 if (bytesReceived == 0) {LOG_INFO(RED "Client disconnected ");}
                 else
-                {
                     LOG_ERROR("recv error");
-                    // break;
-                }
                 removeUserFromChannels(it->getNickName());
                 close(it->getSocket());
                 clients.erase(it);
