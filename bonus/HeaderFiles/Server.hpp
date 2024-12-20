@@ -6,6 +6,9 @@
 #include "Replies.hpp"
 #include "../HeaderFiles/Channel.hpp"
 #include <sstream>
+#include <fstream>
+#include <curl/curl.h>
+
 class Channel;
 class Server {
     private:
