@@ -41,7 +41,7 @@ Server::Server(int argc, char **argv) {
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
 
-    if (getaddrinfo((const char *)"localhost", port.c_str(), &hints, &res) != 0) {
+    if (getaddrinfo(NULL, port.c_str(), &hints, &res) != 0) {
         std::cerr << "getaddrinfo error" << std::endl;
         exit(1);
     }
