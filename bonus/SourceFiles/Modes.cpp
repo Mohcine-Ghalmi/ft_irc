@@ -15,18 +15,6 @@ std::vector<std::string> parameters(const std::string &message, std::string &mod
     return parameters;
 }
 
-void sendModeIRepleyToChannel_TMP(Client &client, Channel &channel, bool isRemoving, char mode) {
-    std::stringstream ss;
-
-    ss << ":" << client.getNickName() << " 324 " << client.getNickName() << " "
-       << channel.getName() << " "
-       << (isRemoving ? "+" : "-") << mode << "\r\n";
-    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
-        Client targetClient = it->second;
-        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    }
-}
-
 bool Server::processModeCommand(Client &operatorClient, const std::string &message) {
     (void)operatorClient;
     if (!this->proccessCommandHelper(message, "MODE"))
@@ -82,7 +70,6 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 if ((action == '+' && channel->isTopicRestricted()) || (action == '-' && !channel->isTopicRestricted()))
                     break ;
                 channel->setTopicRestriction((action == '+') ? 1 : 0);
-                // sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 't');
                 operatorClient.broadcastModeChange(operatorClient.getNickName(), 't', "", channel->getMembers(), channel->getName(), action);
                 break;
 
@@ -96,7 +83,6 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                         operatorClient.ERR_BADCHANNELKEY_CHANNEL(operatorClient, channel->getName());
                         break ;
                     }
-                    // sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 'k');
                     operatorClient.broadcastModeChange(operatorClient.getNickName(), 'k', "", channel->getMembers(), channel->getName(), action);
                 } else {
                     LOG_ERROR("Key protection requires a parameter");
@@ -134,7 +120,6 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                         int userLimit = std::stoi(params[paramsInc++]);
                         if (userLimit > 0) {
                             channel->setUserLimit(userLimit);
-                            // sendModeIRepleyToChannel_TMP(operatorClient, *channel, 1, 'l');
                             operatorClient.broadcastModeChange(operatorClient.getNickName(), 'l', "", channel->getMembers(), channel->getName(), '+');
                         } else {
                             LOG_ERROR("Invalid user limit");
@@ -144,7 +129,6 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                     }
                 } else if (action == '-') {
                     channel->setUserLimit(0);
-                    // sendModeIRepleyToChannel_TMP(operatorClient, *channel, 0, 'l');
                     operatorClient.broadcastModeChange(operatorClient.getNickName(), 'l', "", channel->getMembers(), channel->getName(), '-');
                 }
                 break;
@@ -158,26 +142,10 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
     return true;
 }
 
-void sendModeIRepleyToChannel(Client &client, Channel &channel, bool inviteOnly) {
-    std::stringstream ss;
-
-    ss << ":" << client.getNickName()
-        << " 703 " << channel.getName()
-        << " :" << " This Channel is "
-        << (inviteOnly ? "Private" : "Public")
-        <<".\r\n";
-
-    for (std::map<std::string, Client>::iterator it = channel.getMembers().begin(); it != channel.getMembers().end(); ++it) {
-        Client targetClient = it->second;
-        send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
-    }
-}
-
 void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode) {
     int value = (mode == '+' ? 1 : 0);
     if ((value && channel->isInviteOnly()) || (!value && !channel->isInviteOnly()))
         return ;
-    // sendModeIRepleyToChannel(operatorClient, *channel, value);
     operatorClient.broadcastModeChange(operatorClient.getNickName(), 'i', "", channel->getMembers(), channel->getName(), mode);
     channel->setInviteOnly(value);
 }

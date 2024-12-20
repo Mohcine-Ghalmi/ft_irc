@@ -1,6 +1,4 @@
 #include "../HeaderFiles/Replies.hpp"
-#include <sstream>
-#include <iostream>
 
 std::string Replies::RPL_WELCOME(std::string nickName, std::string userName) {
     std::stringstream ss;
@@ -32,7 +30,7 @@ std::string Replies::RPL_CREATED(const std::string &serverName, const std::strin
 std::string Replies::RPL_MYINFO(const std::string &serverName, const std::string &nickName) {
     std::stringstream ss;
 
-    std::string userModes = "iwso"; 
+    std::string userModes = "iwso";
     std::string channelModes = "mtov";
 
     ss << ":" << serverName << " 004 " << nickName << " " << serverName << " 1.0 " << userModes << " " << channelModes << "\r\n";
@@ -67,4 +65,3 @@ std::string Replies::ERR_PASSWDMISMATCH(const std::string &clientNick) {
     ss <<  ":" << clientNick << " 464 " << clientNick << " :Password incorrect\r\n";
     return ss.str();
 }
-

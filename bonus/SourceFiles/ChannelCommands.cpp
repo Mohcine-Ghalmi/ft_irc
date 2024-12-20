@@ -429,27 +429,23 @@ bool Server::joinChannel(Client& client, const std::string& channelName, const s
         std::stringstream ss;
         std::string modes;
 
-        // Collect all active modes
         if (channel->isInviteOnly())
             modes += "i";
         if (channel->isKeyProtected())
-            modes += "k"; // Include +k mode without showing the key
+            modes += "k";
         if (channel->isTopicRestricted())
             modes += "t";
         if (channel->hasUserLimit())
             modes += "l";
 
-        // Only send RPL_CHANNELMODEIS if there are active modes
         if (!modes.empty()) {
             ss << ":" << client.getNickName() << "!" << client.getNickName()
-            << "@" << client.getNickName()               // Using setter's hostname
+            << "@" << client.getNickName()
             << " MODE " << channelName
             << " +" << modes;
 
-            if (channel->isKeyProtected()) {
-                ss << " ???"; // Use a placeholder instead of the key
-            }
-
+            if (channel->isKeyProtected())
+                ss << " ???";
             ss << "\r\n";
             send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
         }

@@ -1,17 +1,30 @@
 #include "../HeaderFiles/Server.hpp"
 
 void sendHellGate(int client_socket) {
-    std::string hellGate =
-        "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\r\n"
-        "    🔥          Welcome to       🔥\n"
-        "    🔥            Hell!          🔥\n"
-        "    🔥                           🔥\n"
-        "    🔥   👿  Beware of the       🔥\n"
-        "    🔥   Darkness and Flames!    🔥\n"
-        "    🔥                           🔥\n"
-        "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\r\n";
+    std::string welcomeBanner =
+    "╔══════════════════════ Welcome to IRC Hell ═════════════════════╗\n"
+    "║                                                                ║\n"
+    "║     🌋 CONNECTING TO DAEMON.HELL.IRC.NET [PORT: 6667]          ║\n"
+    "║                                                                ║\n"
+    "║     ⚠️  WARNING: ALL CONNECTIONS ARE MONITORED BY CERBERUS      ║\n"
+    "║                                                                ║\n"
+    "║     📜 Server Rules:                                           ║\n"
+    "║        • No flooding/spamming (auto-/kick + ban)               ║\n"
+    "║        • No bot abuse (permanent ban)                          ║\n"
+    "║        • Respect the Channel Operators                         ║\n"
+    "║                                                                ║\n"
+    "║    🔥 Available Commands:                                      ║\n"
+    "║        /join #hellgate  - Main discussion channel              ║\n"
+    "║        /msg CerberusBot - Server assistance                    ║\n"
+    "║                                                                ║\n"
+    "║     💀 Current Users Online: 666                               ║\n"
+    "║     🕯️ Server Uptime: 666 days, 6 hours                         ║\n"
+    "║                                                                ║\n"
+    "║                                                                ║\n"
+    "╚════════════════════ ESTABLISHED CONNECTION ════════════════════╝\n";
 
-    send(client_socket, hellGate.c_str(), hellGate.length(), 0);
+
+    send(client_socket, welcomeBanner.c_str(), welcomeBanner.length(), 0);
 }
 
 bool Server::processPassCommand(Client &client, const std::string &message) {

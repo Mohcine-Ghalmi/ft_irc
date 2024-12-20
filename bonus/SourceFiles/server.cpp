@@ -186,16 +186,11 @@ void Server::removeUserFromChannels(const std::string &nickName) {
     std::map<std::string, Channel>::iterator it = channels.begin();
     while (it != channels.end()) {
         Channel &channel = it->second;
-        std::cout << "channel.getName() : " << channel.getName() << std::endl;
         if (channel.isMember(getClientByNick(nickName)))
             if (processPartCommand(*getClientByNick(nickName), "PART " + channel.getName())) {
                 it = channels.begin();
                 continue;
             }
-        // if (channel.getInvites().count(nickName)) {
-        //     channel.removeInvitedUser(getClientByNick(nickName));
-        //     LOG_INFO("Removed invite for " + nickName + " from channel " + channel.getName());
-        // }
         ++it;
     }
 }

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <string>
-#include <ctime>
+#include <sstream>
 
 class Replies {
     public:
@@ -13,5 +12,4 @@ class Replies {
 
 
         std::string ERR_PASSWDMISMATCH(const std::string &clientNick);
-        std::string ERR_NEEDMOREPARAMS(int clientSocket);
 };
