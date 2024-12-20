@@ -36,7 +36,6 @@ class Server {
         bool isNickTaken(std::string &nick);
         bool processPrivMsgCommand(Client &sender, const std::string &message);
         bool processJoinCommand(Client &client, const std::string &message);
-        bool processBotcommand(Client &client, const std::string &message);
         //
         bool processModeCommand(Client &operatorClient, const std::string &message);
         bool processINVITECommand(Client &operatorClient, const std::string &message);
@@ -55,8 +54,6 @@ class Server {
 
         bool proccessCommandHelper(std::string cmd, std::string dif);
 
-        void RPL_BOTCALLED(Client &client, const std::string &channelName, std::stringstream &Weather, bool isClient);
-        void ERR_BOTCALLED(Client &client, const std::string &channelName,const std::string &Weather, bool isClient);
         void sendErrCannotSendToChan(Client &client, const std::string &channelName);
         void sendUnknownCommandReply(Client &client, const std::string &command);
 };

@@ -37,14 +37,6 @@ bool Server::sendMessageToChannel(Client &sender, const std::string &channelName
     return true;
 }
 
-void trim(std::string& str) {
-    // Remove leading spaces/tabs
-    str.erase(0, str.find_first_not_of(" \t"));
-
-    // Remove trailing spaces/tabs
-    str.erase(str.find_last_not_of(" \t") + 1);
-}
-
 bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     if (!this->proccessCommandHelper(message, "PRIVMSG"))
         return false;
@@ -56,7 +48,6 @@ bool Server::processPrivMsgCommand(Client &sender, const std::string &message) {
     std::string targetList, messageText;
     ss >> targetList;
     std::getline(ss, messageText);
-    trim(messageText);
     if (!messageText.empty() && messageText[0] == ' ')
         messageText = (messageText[1] == ':') ? messageText.substr(2) : messageText;
     if ((messageText.length() == 1 && messageText[0] == ':')  || messageText.empty())
@@ -153,7 +144,6 @@ void sendTopicRepleyToChannel(Client operatorClient,Channel &channel, const std:
         send(targetClient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
     }
 }
-
 
 bool Server::processKICKCommand(Client &operatorClient, const std::string &message) {
     if (!proccessCommandHelper(message, "KICK"))
