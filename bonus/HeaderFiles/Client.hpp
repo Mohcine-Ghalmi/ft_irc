@@ -98,7 +98,8 @@ class Client{
         void RPL_NAMREPLY(Client &operatorClient, const std::string &channelName,
                                 std::map<std::string, Client> &members,
                                 std::map<std::string, Client> &operators);
-        void broadcastModeChange(const std::string &setterNick, const std::string &mode, const std::string &targetNick,  std::map<std::string, Client> &members,const std::string &channelName);
+        void broadcastModeChange(const std::string &setterNick, char mode, const std::string &targetNick, \
+                                std::map<std::string, Client> &members, const std::string &channelName, char sign);
         void ERR_UNKNOWNMODE(Client &client, const std::string &channelName, char modechar);
         void ERR_BADCHANNELKEY_CHANNEL(Client &client, const std::string &channelName);
         void ERR_CHANNELISFULL(Client &client,const std::string &channel);

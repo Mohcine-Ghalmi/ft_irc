@@ -82,7 +82,8 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                 if ((action == '+' && channel->isTopicRestricted()) || (action == '-' && !channel->isTopicRestricted()))
                     break ;
                 channel->setTopicRestriction((action == '+') ? 1 : 0);
-                sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 't');
+                // sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 't');
+                operatorClient.broadcastModeChange(operatorClient.getNickName(), 't', "", channel->getMembers(), channel->getName(), action);
                 break;
 
             case 'k':
@@ -95,7 +96,8 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                         operatorClient.ERR_BADCHANNELKEY_CHANNEL(operatorClient, channel->getName());
                         break ;
                     }
-                    sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 'k');
+                    // sendModeIRepleyToChannel_TMP(operatorClient, *channel, (action == '+' ? 1 : 0), 'k');
+                    operatorClient.broadcastModeChange(operatorClient.getNickName(), 'k', "", channel->getMembers(), channel->getName(), action);
                 } else {
                     LOG_ERROR("Key protection requires a parameter");
                 }
@@ -132,7 +134,8 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                         int userLimit = std::stoi(params[paramsInc++]);
                         if (userLimit > 0) {
                             channel->setUserLimit(userLimit);
-                            sendModeIRepleyToChannel_TMP(operatorClient, *channel, 1, 'l');
+                            // sendModeIRepleyToChannel_TMP(operatorClient, *channel, 1, 'l');
+                            operatorClient.broadcastModeChange(operatorClient.getNickName(), 'l', "", channel->getMembers(), channel->getName(), '+');
                         } else {
                             LOG_ERROR("Invalid user limit");
                         }
@@ -141,7 +144,8 @@ bool Server::processModeCommand(Client &operatorClient, const std::string &messa
                     }
                 } else if (action == '-') {
                     channel->setUserLimit(0);
-                    sendModeIRepleyToChannel_TMP(operatorClient, *channel, 0, 'l');
+                    // sendModeIRepleyToChannel_TMP(operatorClient, *channel, 0, 'l');
+                    operatorClient.broadcastModeChange(operatorClient.getNickName(), 'l', "", channel->getMembers(), channel->getName(), '-');
                 }
                 break;
             default:
@@ -173,7 +177,8 @@ void    ft_setInviteOnly(Channel *channel, Client &operatorClient, char mode) {
     int value = (mode == '+' ? 1 : 0);
     if ((value && channel->isInviteOnly()) || (!value && !channel->isInviteOnly()))
         return ;
-    sendModeIRepleyToChannel(operatorClient, *channel, value);
+    // sendModeIRepleyToChannel(operatorClient, *channel, value);
+    operatorClient.broadcastModeChange(operatorClient.getNickName(), 'i', "", channel->getMembers(), channel->getName(), mode);
     channel->setInviteOnly(value);
 }
 

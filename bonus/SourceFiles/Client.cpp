@@ -144,12 +144,16 @@ void Client::RPL_INVITE(Client &client, const std::string &invitedUser, const st
     send(client.getSocket(), ss.str().c_str(), ss.str().length(), 0);
 }
 
-void Client::broadcastModeChange(const std::string &setterNick, const std::string &mode, const std::string &targetNick, \
-                                std::map<std::string, Client> &members, const std::string &channelName) {
+void Client::broadcastModeChange(const std::string &setterNick, char mode, const std::string &targetNick,
+                                std::map<std::string, Client> &members, const std::string &channelName, char sign) {
     std::stringstream ss;
-    ss << ":" << setterNick << " MODE " << channelName << " " << mode << " " << targetNick << "\r\n";
+    ss << ":" << setterNick << "!" << setterNick
+       << "@" << setterNick               // Using setter's hostname
+       << " MODE " << channelName
+       << " " << sign << mode
+       << " " << targetNick << "\r\n";    // Single MODE message with proper format
 
-    for (std::map<std::string, Client >::iterator it = members.begin(); it != members.end(); ++it) {
+    for (std::map<std::string, Client>::iterator it = members.begin(); it != members.end(); ++it) {
         Client recipient = it->second;
         send(recipient.getSocket(), ss.str().c_str(), ss.str().length(), 0);
     }

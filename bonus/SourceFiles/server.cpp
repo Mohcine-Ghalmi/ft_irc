@@ -210,7 +210,10 @@ void Server::processClienstMessage(fd_set readfds) {
             if (bytesReceived <= 0) {
                 if (bytesReceived == 0) {LOG_INFO(RED "Client disconnected ");}
                 else
+                {
                     LOG_ERROR("recv error");
+                    // break;
+                }
                 removeUserFromChannels(it->getNickName());
                 close(it->getSocket());
                 clients.erase(it);
