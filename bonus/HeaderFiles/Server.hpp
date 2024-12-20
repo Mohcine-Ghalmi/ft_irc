@@ -22,11 +22,11 @@ class Server {
         int getServerSocket();
         Client* getClientByNick(const std::string &targetNick);
 
-        bool setUpClient(Client &client, int &flag);
+        bool setUpClient(Client &client);
 
         void checkArgs(int argc, char **argv);
         void acceptConnection();
-        void handleClientMessage(Client &client, const std::string &message, int &flag);
+        void handleClientMessage(Client &client, const std::string &message);
         void processClienstMessage(fd_set readfds);
 
 
