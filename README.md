@@ -35,7 +35,7 @@ This server also supports file transfers between users using the DCC (Direct Cli
 ### 2. Build and Run the Server
 1. Clone the repository:
    ```bash
-   git clone [<repository-url>](https://github.com/Mohcine-Ghalmi/ft_irc)
+   git clone https://github.com/Mohcine-Ghalmi/ft_irc
    cd ft_irc
    ```
 
