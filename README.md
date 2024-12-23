@@ -43,12 +43,12 @@ This server also supports file transfers between users using the DCC (Direct Cli
 
 2. Compile the server:
    ```bash
-   make
+   make bonus
    ```
 
 3. Run the server:
    ```bash
-   ./irc_server <port> <password>
+   ./ircserv_bonus <port> <password>
    ```
    Replace `<port>` with the port number you want the server to listen on (e.g., `6667`).
 
@@ -58,6 +58,14 @@ This server also supports file transfers between users using the DCC (Direct Cli
    ```bash
    irssi
    ```
+
+   if you don't have irssi you can install it using next command 
+   ```bash
+   apt install irssi ot brew install irssi
+   ```
+
+
+
 ![alt text](images/image.png)
 
 2. Connect to the server:
