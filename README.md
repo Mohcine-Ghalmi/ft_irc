@@ -1,4 +1,6 @@
-# ft_irc
+# ft_irc!
+
+![alt text](images/image3.png)
 
 ## Project Overview
 **ft_irc** is a custom implementation of an IRC (Internet Relay Chat) server written in C++. This project is a team effort by two developers and is designed to emulate the behavior of an IRC server, enabling users to connect, join channels, and communicate in real-time using an IRC client like irssi.
